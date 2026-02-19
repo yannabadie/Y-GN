@@ -41,9 +41,27 @@
 - [x] Decay, promote, cross-tier recall, session filtering
 - [x] 52 Python tests
 
-## Next
+### M6 — IoA Distributed + Embodiment (COMPLETE)
+- [x] Registry & Discovery (Rust): InMemoryRegistry, NodeInfo, DiscoveryFilter, heartbeat
+- [x] Dynamic Teaming (Python): TeamBuilder, FlowController (4 policies), DistributedSwarmEngine
+- [x] µACP Codec: binary wire format (Rust + Python), cross-language interop verified
+- [x] Hardware Simulator (Rust): SimulatedHardware (Drive/Sense/Look/Speak), HardwareTool via MCP
+- [x] VLA Adapter (Python): StubVLAAdapter, VLABridge for MCP tool calls
+- [x] 129 Rust + 85 Python tests
 
-- [ ] M6/E6: IoA / Distributed swarm (registry, discovery, 2-node cooperation)
-- [ ] M6/E7: Embodiment / Hardware simulator
-- [ ] M7/E8: Self-healing + self-evolution (gated)
-- [ ] M8/E9: Release ready (installer, quickstart, smoke tests)
+### M7 — Self-Healing + Self-Evolution (COMPLETE)
+- [x] DiagnosticEngine (Rust): error classification (7 categories), fix suggestions, auto-heal
+- [x] GateRunner + HealAction for automated build repair
+- [x] EvolutionEngine (Python): scaffold evolution loop, FileWhitelist, SafetyGuard, dry-run
+- [x] 160 Rust + 108 Python tests
+
+### M8 — Release Ready (COMPLETE)
+- [x] INSTALL.md: full installation guide + 3 quickstart scenarios
+- [x] README.md: project overview, architecture diagram, features, milestones
+- [x] 3 example scripts (CLI tools, Brain pipeline, MCP integration)
+- [x] 7 Python smoke tests + 3 Rust integration smoke tests
+- [x] 163 Rust + 108 Python tests — all gates green
+
+## Summary
+
+All milestones M0–M8 complete. Total: **163 Rust tests + 108 Python tests = 271 tests**.
