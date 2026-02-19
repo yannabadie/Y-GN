@@ -11,3 +11,6 @@
 | 2026-02-19 | OrchestratorV7 decomposed into Mediator pattern | NEXUS god-object split into: GuardPipeline, ContextBuilder, HiveMindPipeline, SwarmEngine, EvidencePack. Each component independently testable. Orchestrator acts as lightweight coordinator. |
 | 2026-02-19 | MCP transport: JSON-RPC 2.0 over stdio | Simplest possible transport for v1. Core spawned as subprocess by Brain. Line-delimited JSON. Future: HTTP/SSE transport for networked deployments. |
 | 2026-02-19 | Credential scrubbing in all tool outputs | Regex-based redaction of Bearer tokens, API keys (sk-*), passwords, Slack tokens. Applied before any output reaches LLM context or logs. |
+| 2026-02-19 | Memory architecture: Merged NEXUS hybrid backends + ZeroClaw SQLite into 3-tier (hot/warm/cold) Python + FTS5 Rust | Best of both: NEXUS decay/tag logic + ZeroClaw FTS5 performance |
+| 2026-02-19 | Orchestration strategy: Kept NEXUS HiveMind 7-phase but decomposed OrchestratorV7 into Mediator | Audit NX-CG recommended decomposition; Mediator pattern is testable |
+| 2026-02-19 | Tool execution contract: Merged ZeroClaw Tool trait + NEXUS MCP client/server into unified MCP pipeline | MCP is the ecosystem standard; ZeroClaw traits provide the execution layer, NEXUS provides the client |

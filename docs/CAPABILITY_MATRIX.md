@@ -1,0 +1,55 @@
+# Capability Matrix — Y-GN
+
+Maps capabilities from upstream sources to Y-GN target modules.
+
+**Action values:**
+- `Keep` — used as-is from source
+- `Merge` — combined from both sources
+- `Adapt` — rewritten or wrapped for Y-GN
+- `Drop` — not needed in Y-GN
+- `Planned` — not yet implemented
+
+| # | Capability | Source | Action | Notes | Target Module |
+|---|-----------|--------|--------|-------|---------------|
+| 1 | FSM (11 states) | NEXUS | Adapt | Simplified to 8 phases | ygn-brain/fsm.py |
+| 2 | HiveMind 7-phase pipeline | NEXUS | Keep | Core orchestration pipeline | ygn-brain/hivemind.py |
+| 3 | OrchestratorV7 (god-object) | NEXUS | Adapt | Decomposed into Mediator pattern | ygn-brain/orchestrator.py |
+| 4 | HybridSwarmEngine (6 modes) | NEXUS | Keep | Parallel/Sequential/RedBlue/PingPong/LeadSupport/Specialist | ygn-brain/swarm.py |
+| 5 | InputGuard (prompt injection) | NEXUS | Keep | 3 attack categories | ygn-brain/guard.py |
+| 6 | GuardPipeline | NEXUS | Keep | Composable guard chain | ygn-brain/guard.py |
+| 7 | TieredValidator | NEXUS | Drop | Replaced by guard pipeline | - |
+| 8 | Evidence Pack | NEXUS | Keep | JSONL trace format | ygn-brain/evidence.py |
+| 9 | Memory backends (hybrid) | NEXUS | Adapt | 3-tier (hot/warm/cold) | ygn-brain/tiered_memory.py |
+| 10 | Context compression | NEXUS | Planned | Not yet implemented | - |
+| 11 | MCP client | NEXUS | Adapt | Async subprocess MCP client | ygn-brain/mcp_client.py |
+| 12 | OpenTelemetry | NEXUS | Planned | Deps added, traces not emitted | - |
+| 13 | Analytics dashboard | NEXUS | Drop | Post-MVP | - |
+| 14 | React UI | NEXUS | Drop | Out of scope | - |
+| 15 | REST API (Cerebro) | NEXUS | Drop | MCP replaces HTTP for tools | - |
+| 16 | Agent drivers (Gemini/Claude) | NEXUS | Planned | StubProvider only | ygn-core/provider.rs |
+| 17 | SuccessMemory | NEXUS | Planned | Past solutions store | - |
+| 18 | DyLAN metrics | NEXUS | Planned | Agent performance tracking | - |
+| 19 | Event sourcing | NEXUS | Planned | FSM event replay | - |
+| 20 | CLI + daemon | ZeroClaw | Adapt | CLI with 8 subcommands | ygn-core/main.rs |
+| 21 | Gateway (Axum) | ZeroClaw | Keep | HTTP gateway with /health | ygn-core/gateway.rs |
+| 22 | Config + JSON schema | ZeroClaw | Keep | NodeConfig with schema export | ygn-core/config.rs |
+| 23 | Provider trait | ZeroClaw | Adapt | Async trait + StubProvider | ygn-core/provider.rs |
+| 24 | Channel trait | ZeroClaw | Adapt | CliChannel only (no real channels) | ygn-core/channel.rs |
+| 25 | Tool trait + registry | ZeroClaw | Keep | EchoTool + HardwareTool | ygn-core/tool.rs |
+| 26 | Memory trait + SQLite | ZeroClaw | Keep | FTS5 BM25, WAL mode | ygn-core/sqlite_memory.rs |
+| 27 | Observer trait | ZeroClaw | Keep | VerboseObserver + NoopObserver | ygn-core/observer.rs |
+| 28 | Security (credential scrub) | ZeroClaw | Keep | Regex-based redaction | ygn-core/security.rs |
+| 29 | Sandbox profiles | ZeroClaw | Adapt | 4 profiles, path traversal prevention | ygn-core/sandbox.rs |
+| 30 | Landlock (OS sandbox) | ZeroClaw | Planned | Not implemented on Windows | - |
+| 31 | Channels (Telegram/Discord/Matrix) | ZeroClaw | Planned | Traits exist, no adapters | - |
+| 32 | Tunnels (cloudflared/tailscale) | ZeroClaw | Planned | Not implemented | - |
+| 33 | Hardware/peripherals | ZeroClaw | Adapt | SimulatedHardware + HardwareTool | ygn-core/hardware.rs |
+| 34 | Skills system | ZeroClaw | Planned | Tool registry covers basics | - |
+| 35 | uACP codec | Y-GN | Keep | Binary wire format, Rust+Python | ygn-core/uacp.rs, ygn-brain/uacp.py |
+| 36 | Node registry | Y-GN | Keep | InMemoryRegistry + discovery | ygn-core/registry.rs |
+| 37 | Dynamic teaming | Y-GN | Keep | TeamBuilder + FlowController | ygn-brain/teaming.py |
+| 38 | VLA adapter | Y-GN | Keep | StubVLAAdapter + VLABridge | ygn-brain/vla_adapter.py |
+| 39 | DiagnosticEngine | Y-GN | Keep | Error classification + auto-heal | ygn-core/diagnostics.rs |
+| 40 | EvolutionEngine | Y-GN | Keep | Scaffold evolution loop | ygn-brain/evolution.py |
+| 41 | Policy engine | Y-GN | Keep | Risk assessment + decisions | ygn-core/policy.rs |
+| 42 | Audit log | Y-GN | Keep | JSONL security trail | ygn-core/audit.rs |
