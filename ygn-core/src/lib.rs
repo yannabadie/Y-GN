@@ -1,6 +1,7 @@
 pub mod channel;
 pub mod config;
 pub mod gateway;
+pub mod mcp;
 pub mod memory;
 pub mod observer;
 pub mod provider;

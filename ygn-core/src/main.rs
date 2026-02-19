@@ -2,6 +2,7 @@ use clap::{Parser, Subcommand};
 
 use ygn_core::config;
 use ygn_core::gateway;
+use ygn_core::mcp;
 use ygn_core::provider::{self, Provider};
 use ygn_core::tool;
 
@@ -36,6 +37,8 @@ enum Commands {
         #[command(subcommand)]
         action: ProvidersAction,
     },
+    /// Start MCP server over stdio (JSON-RPC 2.0, newline-delimited)
+    Mcp,
 }
 
 #[derive(Subcommand)]
@@ -109,6 +112,10 @@ async fn main() -> anyhow::Result<()> {
                 );
             }
         },
+        Commands::Mcp => {
+            let server = mcp::McpServer::with_default_tools();
+            server.run_stdio()?;
+        }
     }
 
     Ok(())

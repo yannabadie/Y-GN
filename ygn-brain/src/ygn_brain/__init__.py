@@ -9,6 +9,7 @@ from .evidence import EvidenceEntry, EvidencePack
 from .fsm import FSMState, Phase
 from .guard import GuardPipeline, GuardResult, InputGuard, ThreatLevel
 from .hivemind import HiveMindPipeline, PhaseResult
+from .mcp_client import McpClient, McpError
 from .memory import InMemoryBackend, MemoryCategory, MemoryEntry, MemoryService
 from .orchestrator import Orchestrator
 from .swarm import (
@@ -23,6 +24,7 @@ from .swarm import (
     TaskAnalyzer,
     TaskComplexity,
 )
+from .tool_bridge import McpToolBridge
 
 __all__ = [
     "ContextBuilder",
@@ -35,6 +37,9 @@ __all__ = [
     "HiveMindPipeline",
     "InMemoryBackend",
     "InputGuard",
+    "McpClient",
+    "McpError",
+    "McpToolBridge",
     "MemoryCategory",
     "MemoryEntry",
     "MemoryService",
