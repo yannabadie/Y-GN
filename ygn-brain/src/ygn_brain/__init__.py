@@ -24,6 +24,13 @@ from .swarm import (
     TaskAnalyzer,
     TaskComplexity,
 )
+from .tiered_memory import (
+    ColdEntry,
+    HotEntry,
+    MemoryTier,
+    TieredMemoryService,
+    WarmEntry,
+)
 from .tool_bridge import McpToolBridge
 
 __all__ = [
@@ -57,4 +64,9 @@ __all__ = [
     "TaskAnalyzer",
     "TaskComplexity",
     "ThreatLevel",
+    "ColdEntry",
+    "HotEntry",
+    "MemoryTier",
+    "TieredMemoryService",
+    "WarmEntry",
 ]

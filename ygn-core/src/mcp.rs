@@ -7,6 +7,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::io::{self, BufRead, Write};
 
+use crate::audit::{AuditEntry, AuditEventType, AuditLog};
+use crate::policy::{PolicyAction, PolicyEngine};
 use crate::tool::{EchoTool, ToolRegistry};
 
 // ---------------------------------------------------------------------------
@@ -50,19 +52,45 @@ struct JsonRpcError {
 const METHOD_NOT_FOUND: i64 = -32601;
 const INVALID_PARAMS: i64 = -32602;
 
+// Custom error codes for policy enforcement
+/// The tool call was denied by the security policy engine.
+const POLICY_DENIED: i64 = -32001;
+/// The tool call requires explicit user approval before it can proceed.
+const APPROVAL_REQUIRED: i64 = -32002;
+
 // ---------------------------------------------------------------------------
 // McpServer
 // ---------------------------------------------------------------------------
 
 /// A minimal MCP server that routes JSON-RPC messages to a [`ToolRegistry`].
+///
+/// When a [`PolicyEngine`] is attached, every `tools/call` request is
+/// evaluated before execution.  Denied calls produce a JSON-RPC error with
+/// code [`POLICY_DENIED`]; calls that need approval use [`APPROVAL_REQUIRED`].
 pub struct McpServer {
     registry: ToolRegistry,
+    policy: Option<PolicyEngine>,
+    audit_log: std::cell::RefCell<AuditLog>,
 }
 
 impl McpServer {
-    /// Create a new MCP server with a pre-populated tool registry.
+    /// Create a new MCP server with a pre-populated tool registry and no
+    /// policy engine.
     pub fn new(registry: ToolRegistry) -> Self {
-        Self { registry }
+        Self {
+            registry,
+            policy: None,
+            audit_log: std::cell::RefCell::new(AuditLog::new()),
+        }
+    }
+
+    /// Create a new MCP server with a policy engine attached.
+    pub fn with_policy(registry: ToolRegistry, policy: PolicyEngine) -> Self {
+        Self {
+            registry,
+            policy: Some(policy),
+            audit_log: std::cell::RefCell::new(AuditLog::new()),
+        }
     }
 
     /// Create a server with the default set of built-in tools.
@@ -70,6 +98,11 @@ impl McpServer {
         let mut registry = ToolRegistry::new();
         registry.register(Box::new(EchoTool));
         Self::new(registry)
+    }
+
+    /// Access the audit log (e.g. for export after a session).
+    pub fn audit_log(&self) -> std::cell::Ref<'_, AuditLog> {
+        self.audit_log.borrow()
     }
 
     // -- public entry point ------------------------------------------------
@@ -195,6 +228,52 @@ impl McpServer {
             .get("arguments")
             .cloned()
             .unwrap_or_else(|| json!({}));
+
+        // --- Policy check (if a policy engine is attached) ----------------
+        if let Some(ref policy) = self.policy {
+            let decision = policy.evaluate(name, &arguments);
+
+            // Record the attempt in the audit log.
+            self.audit_log.borrow_mut().record(AuditEntry::now(
+                AuditEventType::ToolCallAttempt,
+                name,
+                format!("{:?}", decision.action),
+                format!("{:?}", decision.risk_level),
+                json!({ "arguments": arguments }),
+            ));
+
+            match decision.action {
+                PolicyAction::Deny => {
+                    self.audit_log.borrow_mut().record(AuditEntry::now(
+                        AuditEventType::AccessDenied,
+                        name,
+                        "Deny",
+                        format!("{:?}", decision.risk_level),
+                        json!({ "reason": decision.reason }),
+                    ));
+                    return Err((POLICY_DENIED, decision.reason));
+                }
+                PolicyAction::RequireApproval => {
+                    self.audit_log.borrow_mut().record(AuditEntry::now(
+                        AuditEventType::ApprovalRequired,
+                        name,
+                        "RequireApproval",
+                        format!("{:?}", decision.risk_level),
+                        json!({ "reason": decision.reason }),
+                    ));
+                    return Err((APPROVAL_REQUIRED, decision.reason));
+                }
+                PolicyAction::Allow => {
+                    self.audit_log.borrow_mut().record(AuditEntry::now(
+                        AuditEventType::AccessGranted,
+                        name,
+                        "Allow",
+                        format!("{:?}", decision.risk_level),
+                        json!({ "reason": decision.reason }),
+                    ));
+                }
+            }
+        }
 
         let tool = self
             .registry
@@ -402,5 +481,86 @@ mod tests {
         let v = parse_response(&resp);
 
         assert_eq!(v["id"], "abc-123");
+    }
+
+    // -- policy-gated tool calls ------------------------------------------
+
+    use crate::policy::PolicyEngine;
+    use crate::sandbox::{ProcessSandbox, SandboxProfile};
+    use std::time::Duration;
+
+    /// Helper: build a server with a policy engine that denies "dangerous_tool".
+    fn server_with_policy() -> McpServer {
+        let mut registry = ToolRegistry::new();
+        registry.register(Box::new(EchoTool));
+
+        let sandbox = ProcessSandbox::new(SandboxProfile::Net);
+        let policy = PolicyEngine::new(
+            Box::new(sandbox),
+            vec!["needs_approval".into()],
+            vec!["dangerous_tool".into()],
+            Duration::from_secs(30),
+        );
+        McpServer::with_policy(registry, policy)
+    }
+
+    #[test]
+    fn policy_denied_tool_returns_error() {
+        let srv = server_with_policy();
+        let req = r#"{"jsonrpc":"2.0","id":10,"method":"tools/call","params":{"name":"dangerous_tool","arguments":{}}}"#;
+        let resp = srv.handle_message(req).expect("should produce a response");
+        let v = parse_response(&resp);
+
+        assert_eq!(v["error"]["code"], POLICY_DENIED);
+        assert!(v["error"]["message"]
+            .as_str()
+            .unwrap()
+            .contains("deny list"));
+    }
+
+    #[test]
+    fn policy_approval_required_returns_error() {
+        let srv = server_with_policy();
+        let req = r#"{"jsonrpc":"2.0","id":11,"method":"tools/call","params":{"name":"needs_approval","arguments":{}}}"#;
+        let resp = srv.handle_message(req).expect("should produce a response");
+        let v = parse_response(&resp);
+
+        assert_eq!(v["error"]["code"], APPROVAL_REQUIRED);
+        assert!(v["error"]["message"].as_str().unwrap().contains("approval"));
+    }
+
+    #[test]
+    fn policy_allowed_tool_executes() {
+        let srv = server_with_policy();
+        let req = r#"{"jsonrpc":"2.0","id":12,"method":"tools/call","params":{"name":"echo","arguments":{"input":"safe"}}}"#;
+        let resp = srv.handle_message(req).expect("should produce a response");
+        let v = parse_response(&resp);
+
+        // Should succeed, not error.
+        assert!(v["error"].is_null());
+        let content = v["result"]["content"].as_array().expect("content array");
+        assert_eq!(content[0]["text"], "safe");
+    }
+
+    #[test]
+    fn policy_audit_log_records_events() {
+        let srv = server_with_policy();
+
+        // Fire a denied call.
+        let req = r#"{"jsonrpc":"2.0","id":13,"method":"tools/call","params":{"name":"dangerous_tool","arguments":{}}}"#;
+        srv.handle_message(req);
+
+        // Fire an allowed call.
+        let req2 = r#"{"jsonrpc":"2.0","id":14,"method":"tools/call","params":{"name":"echo","arguments":{"input":"hi"}}}"#;
+        srv.handle_message(req2);
+
+        let log = srv.audit_log();
+        // Denied call: ToolCallAttempt + AccessDenied = 2
+        // Allowed call: ToolCallAttempt + AccessGranted = 2
+        assert!(
+            log.len() >= 4,
+            "Expected at least 4 audit entries, got {}",
+            log.len()
+        );
     }
 }

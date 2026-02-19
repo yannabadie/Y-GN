@@ -1,9 +1,13 @@
+pub mod audit;
 pub mod channel;
 pub mod config;
 pub mod gateway;
 pub mod mcp;
 pub mod memory;
 pub mod observer;
+pub mod policy;
 pub mod provider;
+pub mod sandbox;
 pub mod security;
+pub mod sqlite_memory;
 pub mod tool;
