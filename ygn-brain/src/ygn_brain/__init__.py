@@ -24,6 +24,14 @@ from .swarm import (
     TaskAnalyzer,
     TaskComplexity,
 )
+from .teaming import (
+    AgentProfile,
+    DistributedSwarmEngine,
+    FlowController,
+    FlowPolicy,
+    TeamBuilder,
+    TeamFormation,
+)
 from .tiered_memory import (
     ColdEntry,
     HotEntry,
@@ -32,13 +40,25 @@ from .tiered_memory import (
     WarmEntry,
 )
 from .tool_bridge import McpToolBridge
+from .uacp import UacpCodec, UacpMessage, UacpVerb
+from .vla_adapter import (
+    StubVLAAdapter,
+    VLAAdapter,
+    VLABridge,
+    VLAInput,
+    VLAOutput,
+)
 
 __all__ = [
+    "AgentProfile",
     "ContextBuilder",
+    "DistributedSwarmEngine",
     "ExecutionContext",
     "EvidenceEntry",
     "EvidencePack",
     "FSMState",
+    "FlowController",
+    "FlowPolicy",
     "GuardPipeline",
     "GuardResult",
     "HiveMindPipeline",
@@ -56,6 +76,7 @@ __all__ = [
     "PhaseResult",
     "SequentialExecutor",
     "SpecialistExecutor",
+    "StubVLAAdapter",
     "SwarmEngine",
     "SwarmExecutor",
     "SwarmMode",
@@ -63,7 +84,16 @@ __all__ = [
     "TaskAnalysis",
     "TaskAnalyzer",
     "TaskComplexity",
+    "TeamBuilder",
+    "TeamFormation",
     "ThreatLevel",
+    "VLAAdapter",
+    "VLABridge",
+    "VLAInput",
+    "VLAOutput",
+    "UacpCodec",
+    "UacpMessage",
+    "UacpVerb",
     "ColdEntry",
     "HotEntry",
     "MemoryTier",

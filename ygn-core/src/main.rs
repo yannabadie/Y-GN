@@ -2,8 +2,10 @@ use clap::{Parser, Subcommand};
 
 use ygn_core::config;
 use ygn_core::gateway;
+use ygn_core::hardware;
 use ygn_core::mcp;
 use ygn_core::provider::{self, Provider};
+use ygn_core::registry::{self, NodeRegistry};
 use ygn_core::tool;
 
 #[derive(Parser)]
@@ -39,6 +41,11 @@ enum Commands {
     },
     /// Start MCP server over stdio (JSON-RPC 2.0, newline-delimited)
     Mcp,
+    /// Node registry management
+    Registry {
+        #[command(subcommand)]
+        action: RegistryAction,
+    },
 }
 
 #[derive(Subcommand)]
@@ -57,6 +64,14 @@ enum ToolsAction {
 enum ProvidersAction {
     /// List all registered providers
     List,
+}
+
+#[derive(Subcommand)]
+enum RegistryAction {
+    /// List all registered nodes
+    List,
+    /// Show this node's info
+    SelfInfo,
 }
 
 #[tokio::main]
@@ -88,10 +103,11 @@ async fn main() -> anyhow::Result<()> {
         },
         Commands::Tools { action } => match action {
             ToolsAction::List => {
-                let mut registry = tool::ToolRegistry::new();
-                registry.register(Box::new(tool::EchoTool));
+                let mut tool_registry = tool::ToolRegistry::new();
+                tool_registry.register(Box::new(tool::EchoTool));
+                tool_registry.register(Box::new(hardware::HardwareTool::new()));
 
-                let specs = registry.list();
+                let specs = tool_registry.list();
                 println!("Registered tools ({}):", specs.len());
                 for spec in &specs {
                     println!("  - {} : {}", spec.name, spec.description);
@@ -116,6 +132,54 @@ async fn main() -> anyhow::Result<()> {
             let server = mcp::McpServer::with_default_tools();
             server.run_stdio()?;
         }
+        Commands::Registry { action } => match action {
+            RegistryAction::List => {
+                let node_registry = registry::InMemoryRegistry::new();
+                let all = node_registry
+                    .discover(registry::DiscoveryFilter::default())
+                    .await?;
+                println!("Registered nodes ({}):", all.len());
+                for node in &all {
+                    println!(
+                        "  - {} role={} trust={} endpoints={} caps={:?}",
+                        node.node_id,
+                        node.role,
+                        node.trust_tier,
+                        node.endpoints.len(),
+                        node.capabilities
+                    );
+                }
+            }
+            RegistryAction::SelfInfo => {
+                let cfg = config::NodeConfig::load_or_default();
+                let node_id = uuid::Uuid::new_v4().to_string();
+                let role = match cfg.node_role.as_str() {
+                    "brain" => registry::NodeRole::Brain,
+                    "core" => registry::NodeRole::Core,
+                    "brain-proxy" => registry::NodeRole::BrainProxy,
+                    _ => registry::NodeRole::Edge,
+                };
+                let trust = match cfg.trust_tier.as_str() {
+                    "untrusted" => registry::TrustTier::Untrusted,
+                    _ => registry::TrustTier::Trusted,
+                };
+                let info = registry::NodeInfo {
+                    node_id,
+                    role,
+                    endpoints: vec![registry::Endpoint {
+                        protocol: "http".to_string(),
+                        address: cfg.gateway_bind.clone(),
+                    }],
+                    trust_tier: trust,
+                    capabilities: vec!["echo".to_string(), "hardware".to_string()],
+                    last_seen: chrono::Utc::now(),
+                    metadata: serde_json::json!({
+                        "version": env!("CARGO_PKG_VERSION"),
+                    }),
+                };
+                println!("{}", serde_json::to_string_pretty(&info)?);
+            }
+        },
     }
 
     Ok(())
