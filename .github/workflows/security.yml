@@ -1,0 +1,54 @@
+name: Security Scans
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "0 6 * * 1"  # Weekly Monday 06:00 UTC
+
+jobs:
+  secret-scan:
+    name: Secret scanning
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: TruffleHog secret scan
+        uses: trufflesecurity/trufflehog@main
+        with:
+          extra_args: --only-verified
+
+  rust-audit:
+    name: Rust dependency audit
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ygn-core
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install cargo-deny
+        run: cargo install cargo-deny --locked || true
+      - name: Audit
+        run: cargo deny check 2>/dev/null || echo "::warning::cargo-deny not configured"
+
+  python-audit:
+    name: Python dependency audit
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ygn-brain
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install
+        run: |
+          pip install --upgrade pip
+          pip install -e ".[dev]" pip-audit
+      - name: Audit
+        run: pip-audit || echo "::warning::pip-audit found issues"

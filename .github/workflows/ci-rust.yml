@@ -1,0 +1,38 @@
+name: CI — Rust (ygn-core)
+
+on:
+  push:
+    branches: [main]
+    paths: ["ygn-core/**", ".github/workflows/ci-rust.yml"]
+  pull_request:
+    branches: [main]
+    paths: ["ygn-core/**", ".github/workflows/ci-rust.yml"]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  check:
+    name: fmt + clippy + test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ygn-core
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ygn-core
+      - name: Format check
+        run: cargo fmt --check
+      - name: Clippy
+        run: cargo clippy -- -D warnings
+      - name: Tests
+        run: cargo test
+      - name: Dependency audit
+        run: |
+          cargo install cargo-deny --locked || true
+          cargo deny check 2>/dev/null || echo "::warning::cargo-deny not configured yet"

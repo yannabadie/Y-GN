@@ -1,0 +1,8 @@
+# Y-GN Code Owners
+
+/ygn-core/          @yannabadie
+/ygn-brain/         @yannabadie
+/.github/workflows/ @yannabadie
+/memory-bank/       @yannabadie
+ROADMAP.md          @yannabadie
+CLAUDE.md           @yannabadie

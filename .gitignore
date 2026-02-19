@@ -1,0 +1,38 @@
+# Rust
+/ygn-core/target/
+**/*.rs.bk
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.*
+*.pem
+*.key
+
+# Evidence packs (local dev only)
+/evidence/
+
+# Virtual environments
+.venv/
+venv/

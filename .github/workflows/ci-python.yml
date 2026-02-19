@@ -1,0 +1,39 @@
+name: CI — Python (ygn-brain)
+
+on:
+  push:
+    branches: [main]
+    paths: ["ygn-brain/**", ".github/workflows/ci-python.yml"]
+  pull_request:
+    branches: [main]
+    paths: ["ygn-brain/**", ".github/workflows/ci-python.yml"]
+
+jobs:
+  check:
+    name: lint + type-check + test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ygn-brain
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: Compile check
+        run: python -m compileall src/
+      - name: Ruff lint
+        run: ruff check .
+      - name: Mypy type check
+        run: mypy src/
+      - name: Tests
+        run: pytest -q
+      - name: Dependency audit
+        run: |
+          pip install pip-audit
+          pip-audit || echo "::warning::pip-audit found issues"
