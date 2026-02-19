@@ -7,6 +7,7 @@ use ygn_core::hardware;
 use ygn_core::mcp;
 use ygn_core::provider::{self, Provider};
 use ygn_core::registry::{self, NodeRegistry};
+use ygn_core::skills;
 use ygn_core::tool;
 
 #[derive(Parser)]
@@ -47,6 +48,11 @@ enum Commands {
         #[command(subcommand)]
         action: RegistryAction,
     },
+    /// Skill management
+    Skills {
+        #[command(subcommand)]
+        action: SkillsAction,
+    },
     /// Run diagnostics on stdin input (pipe gate output)
     Diagnose {
         /// Name of the gate/source that produced the output
@@ -70,6 +76,12 @@ enum ToolsAction {
 #[derive(Subcommand)]
 enum ProvidersAction {
     /// List all registered providers
+    List,
+}
+
+#[derive(Subcommand)]
+enum SkillsAction {
+    /// List all registered skills
     List,
 }
 
@@ -139,6 +151,39 @@ async fn main() -> anyhow::Result<()> {
             let server = mcp::McpServer::with_default_tools();
             server.run_stdio()?;
         }
+        Commands::Skills { action } => match action {
+            SkillsAction::List => {
+                let mut skill_registry = skills::SkillRegistry::new();
+
+                // Register a sample "health-check" skill that uses the echo tool.
+                let health_check = skills::SkillDefinition {
+                    name: "health-check".to_string(),
+                    description: "Run a basic echo-based health check".to_string(),
+                    version: "1.0.0".to_string(),
+                    author: "ygn-core".to_string(),
+                    steps: vec![skills::SkillStep {
+                        tool_name: "echo".to_string(),
+                        arguments: serde_json::json!({"input": "health-ok"}),
+                        description: "Echo a health ping".to_string(),
+                        depends_on: vec![],
+                    }],
+                    tags: vec!["health".to_string(), "builtin".to_string()],
+                    created_at: chrono::Utc::now(),
+                };
+                skill_registry.register(health_check)?;
+
+                let all = skill_registry.list();
+                println!("Registered skills ({}):", all.len());
+                for skill in &all {
+                    println!(
+                        "  - {} v{} by {} : {}",
+                        skill.name, skill.version, skill.author, skill.description
+                    );
+                    println!("    tags: {:?}", skill.tags);
+                    println!("    steps: {}", skill.steps.len());
+                }
+            }
+        },
         Commands::Diagnose { source } => {
             use std::io::Read;
             let mut input = String::new();

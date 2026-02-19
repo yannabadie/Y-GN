@@ -5,6 +5,9 @@ from __future__ import annotations
 __version__ = "0.1.0"
 
 from .context import ContextBuilder, ExecutionContext
+from .context_compression import CompressedContext, CompressionStrategy, ContextCompressor
+from .dylan_metrics import AgentMetrics, DyLANTracker
+from .event_sourcing import EventStore, FSMEvent, InMemoryEventStore
 from .evidence import EvidenceEntry, EvidencePack
 from .evolution import (
     EvolutionEngine,
@@ -21,6 +24,7 @@ from .hivemind import HiveMindPipeline, PhaseResult
 from .mcp_client import McpClient, McpError
 from .memory import InMemoryBackend, MemoryCategory, MemoryEntry, MemoryService
 from .orchestrator import Orchestrator
+from .success_memory import SuccessMemory, SuccessRecord
 from .swarm import (
     ParallelExecutor,
     SequentialExecutor,
@@ -41,6 +45,14 @@ from .teaming import (
     TeamBuilder,
     TeamFormation,
 )
+from .telemetry import (
+    TelemetryConfig,
+    YgnTracer,
+    trace_guard_check,
+    trace_hivemind_phase,
+    trace_mcp_call,
+    trace_orchestrator_run,
+)
 from .tiered_memory import (
     ColdEntry,
     HotEntry,
@@ -59,9 +71,15 @@ from .vla_adapter import (
 )
 
 __all__ = [
+    "AgentMetrics",
     "AgentProfile",
+    "CompressedContext",
+    "CompressionStrategy",
     "ContextBuilder",
+    "ContextCompressor",
     "DistributedSwarmEngine",
+    "DyLANTracker",
+    "EventStore",
     "EvolutionEngine",
     "EvolutionProposal",
     "EvolutionResult",
@@ -69,6 +87,7 @@ __all__ = [
     "ExecutionContext",
     "EvidenceEntry",
     "EvidencePack",
+    "FSMEvent",
     "FSMState",
     "FileWhitelist",
     "FlowController",
@@ -78,6 +97,7 @@ __all__ = [
     "GuardResult",
     "HiveMindPipeline",
     "InMemoryBackend",
+    "InMemoryEventStore",
     "InputGuard",
     "McpClient",
     "McpError",
@@ -96,13 +116,17 @@ __all__ = [
     "SwarmExecutor",
     "SwarmMode",
     "SafetyGuard",
+    "SuccessMemory",
+    "SuccessRecord",
     "SwarmResult",
     "TaskAnalysis",
     "TaskAnalyzer",
     "TaskComplexity",
     "TeamBuilder",
     "TeamFormation",
+    "TelemetryConfig",
     "ThreatLevel",
+    "YgnTracer",
     "VLAAdapter",
     "VLABridge",
     "VLAInput",
@@ -110,6 +134,10 @@ __all__ = [
     "UacpCodec",
     "UacpMessage",
     "UacpVerb",
+    "trace_guard_check",
+    "trace_hivemind_phase",
+    "trace_mcp_call",
+    "trace_orchestrator_run",
     "ColdEntry",
     "HotEntry",
     "MemoryTier",
