@@ -1,7 +1,9 @@
 use clap::{Parser, Subcommand};
 
-mod config;
-mod gateway;
+use ygn_core::config;
+use ygn_core::gateway;
+use ygn_core::provider::{self, Provider};
+use ygn_core::tool;
 
 #[derive(Parser)]
 #[command(name = "ygn-core", version, about = "Y-GN data-plane runtime")]
@@ -24,12 +26,34 @@ enum Commands {
         #[command(subcommand)]
         action: ConfigAction,
     },
+    /// Tool management
+    Tools {
+        #[command(subcommand)]
+        action: ToolsAction,
+    },
+    /// Provider management
+    Providers {
+        #[command(subcommand)]
+        action: ProvidersAction,
+    },
 }
 
 #[derive(Subcommand)]
 enum ConfigAction {
     /// Print JSON schema for configuration
     Schema,
+}
+
+#[derive(Subcommand)]
+enum ToolsAction {
+    /// List all registered tools
+    List,
+}
+
+#[derive(Subcommand)]
+enum ProvidersAction {
+    /// List all registered providers
+    List,
 }
 
 #[tokio::main]
@@ -57,6 +81,32 @@ async fn main() -> anyhow::Result<()> {
             ConfigAction::Schema => {
                 let schema = config::NodeConfig::json_schema();
                 println!("{schema}");
+            }
+        },
+        Commands::Tools { action } => match action {
+            ToolsAction::List => {
+                let mut registry = tool::ToolRegistry::new();
+                registry.register(Box::new(tool::EchoTool));
+
+                let specs = registry.list();
+                println!("Registered tools ({}):", specs.len());
+                for spec in &specs {
+                    println!("  - {} : {}", spec.name, spec.description);
+                }
+            }
+        },
+        Commands::Providers { action } => match action {
+            ProvidersAction::List => {
+                let stub = provider::StubProvider::default();
+                let caps = stub.capabilities();
+                println!("Registered providers:");
+                println!(
+                    "  - {} (tool_calling={}, vision={}, streaming={})",
+                    stub.name(),
+                    caps.native_tool_calling,
+                    caps.vision,
+                    caps.streaming
+                );
             }
         },
     }

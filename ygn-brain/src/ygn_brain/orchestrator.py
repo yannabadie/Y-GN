@@ -5,46 +5,86 @@ from __future__ import annotations
 import uuid
 from typing import Any
 
+from .context import ContextBuilder
 from .evidence import EvidencePack
 from .fsm import FSMState, Phase
+from .guard import GuardPipeline
+from .hivemind import HiveMindPipeline
+from .memory import MemoryService
 
 
 class Orchestrator:
-    """Minimal orchestrator that drives the HiveMind 7-phase pipeline."""
+    """Orchestrator that drives the HiveMind 7-phase pipeline with guard and memory."""
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        guard_pipeline: GuardPipeline | None = None,
+        memory_service: MemoryService | None = None,
+    ) -> None:
         self.state = FSMState()
         self.evidence = EvidencePack(session_id=uuid.uuid4().hex[:12])
+        self._guard_pipeline = guard_pipeline if guard_pipeline is not None else GuardPipeline()
+        self._memory_service = memory_service
+        self._context_builder = ContextBuilder()
+        self._hivemind = HiveMindPipeline()
 
     def run(self, user_input: str) -> dict[str, Any]:
-        """Execute a full pipeline pass (stub implementation for M0/M2)."""
-        # Phase 1: Diagnosis
-        self.state = self.state.transition(Phase.DIAGNOSIS)
-        self.evidence.add("diagnosis", "input", {"user_input": user_input})
+        """Execute a full pipeline pass.
 
-        # Phase 2: Analysis
-        self.state = self.state.transition(Phase.ANALYSIS)
-        self.evidence.add("analysis", "decision", {"strategy": "direct"})
+        Returns dict with ``result`` and ``session_id`` keys (backward-compatible).
+        """
+        # Build execution context (guard + memory + evidence)
+        ctx = self._context_builder.build(
+            user_input=user_input,
+            session_id=self.evidence.session_id,
+            memory_service=self._memory_service,
+            guard_pipeline=self._guard_pipeline,
+        )
 
-        # Phase 3: Planning
-        self.state = self.state.transition(Phase.PLANNING)
-        plan = {"steps": [{"action": "respond", "content": f"Processed: {user_input}"}]}
-        self.evidence.add("planning", "decision", {"plan": plan})
+        # If guard blocks, short-circuit
+        if not ctx.guard_result.allowed:
+            self.evidence = ctx.evidence
+            self.evidence.add(
+                "guard",
+                "decision",
+                {
+                    "blocked": True,
+                    "threat_level": ctx.guard_result.threat_level,
+                    "reason": ctx.guard_result.reason,
+                },
+            )
+            return {
+                "result": f"Blocked: {ctx.guard_result.reason}",
+                "session_id": self.evidence.session_id,
+                "blocked": True,
+            }
 
-        # Phase 4: Execution
-        self.state = self.state.transition(Phase.EXECUTION)
-        result = plan["steps"][0]["content"]
-        self.evidence.add("execution", "output", {"result": result})
+        # Run HiveMind pipeline
+        results = self._hivemind.run(user_input, ctx.evidence)
 
-        # Phase 5: Validation
-        self.state = self.state.transition(Phase.VALIDATION)
-        self.evidence.add("validation", "decision", {"passed": True})
+        # Update internal state by walking FSM through all phases
+        self.state = FSMState()
+        for phase in [
+            Phase.DIAGNOSIS,
+            Phase.ANALYSIS,
+            Phase.PLANNING,
+            Phase.EXECUTION,
+            Phase.VALIDATION,
+            Phase.SYNTHESIS,
+            Phase.COMPLETE,
+        ]:
+            self.state = self.state.transition(phase)
 
-        # Phase 6: Synthesis
-        self.state = self.state.transition(Phase.SYNTHESIS)
-        self.evidence.add("synthesis", "output", {"final": result})
+        # Extract final result from synthesis phase
+        synthesis_results = [r for r in results if r.phase == "synthesis"]
+        if synthesis_results:
+            final = synthesis_results[0].data.get("final", "")
+        else:
+            final = f"Processed: {user_input}"
 
-        # Phase 7: Complete
-        self.state = self.state.transition(Phase.COMPLETE)
+        self.evidence = ctx.evidence
 
-        return {"result": result, "session_id": self.evidence.session_id}
+        return {
+            "result": final,
+            "session_id": self.evidence.session_id,
+        }
