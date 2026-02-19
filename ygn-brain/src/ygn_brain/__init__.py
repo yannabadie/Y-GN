@@ -6,6 +6,15 @@ __version__ = "0.1.0"
 
 from .context import ContextBuilder, ExecutionContext
 from .evidence import EvidenceEntry, EvidencePack
+from .evolution import (
+    EvolutionEngine,
+    EvolutionProposal,
+    EvolutionResult,
+    EvolutionScope,
+    FileWhitelist,
+    GateCheckResult,
+    SafetyGuard,
+)
 from .fsm import FSMState, Phase
 from .guard import GuardPipeline, GuardResult, InputGuard, ThreatLevel
 from .hivemind import HiveMindPipeline, PhaseResult
@@ -53,12 +62,18 @@ __all__ = [
     "AgentProfile",
     "ContextBuilder",
     "DistributedSwarmEngine",
+    "EvolutionEngine",
+    "EvolutionProposal",
+    "EvolutionResult",
+    "EvolutionScope",
     "ExecutionContext",
     "EvidenceEntry",
     "EvidencePack",
     "FSMState",
+    "FileWhitelist",
     "FlowController",
     "FlowPolicy",
+    "GateCheckResult",
     "GuardPipeline",
     "GuardResult",
     "HiveMindPipeline",
@@ -80,6 +95,7 @@ __all__ = [
     "SwarmEngine",
     "SwarmExecutor",
     "SwarmMode",
+    "SafetyGuard",
     "SwarmResult",
     "TaskAnalysis",
     "TaskAnalyzer",

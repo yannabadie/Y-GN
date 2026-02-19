@@ -1,6 +1,7 @@
 pub mod audit;
 pub mod channel;
 pub mod config;
+pub mod diagnostics;
 pub mod gateway;
 pub mod hardware;
 pub mod mcp;

@@ -1,6 +1,7 @@
 use clap::{Parser, Subcommand};
 
 use ygn_core::config;
+use ygn_core::diagnostics;
 use ygn_core::gateway;
 use ygn_core::hardware;
 use ygn_core::mcp;
@@ -45,6 +46,12 @@ enum Commands {
     Registry {
         #[command(subcommand)]
         action: RegistryAction,
+    },
+    /// Run diagnostics on stdin input (pipe gate output)
+    Diagnose {
+        /// Name of the gate/source that produced the output
+        #[arg(short, long, default_value = "stdin")]
+        source: String,
     },
 }
 
@@ -131,6 +138,14 @@ async fn main() -> anyhow::Result<()> {
         Commands::Mcp => {
             let server = mcp::McpServer::with_default_tools();
             server.run_stdio()?;
+        }
+        Commands::Diagnose { source } => {
+            use std::io::Read;
+            let mut input = String::new();
+            std::io::stdin().read_to_string(&mut input)?;
+            let engine = diagnostics::DiagnosticEngine::new();
+            let diag = engine.analyze(&source, &input);
+            println!("{}", serde_json::to_string_pretty(&diag)?);
         }
         Commands::Registry { action } => match action {
             RegistryAction::List => {
