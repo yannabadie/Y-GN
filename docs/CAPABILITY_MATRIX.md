@@ -20,16 +20,16 @@ Maps capabilities from upstream sources to Y-GN target modules.
 | 7 | TieredValidator | NEXUS | Drop | Replaced by guard pipeline | - |
 | 8 | Evidence Pack | NEXUS | Keep | JSONL trace format | ygn-brain/evidence.py |
 | 9 | Memory backends (hybrid) | NEXUS | Adapt | 3-tier (hot/warm/cold) | ygn-brain/tiered_memory.py |
-| 10 | Context compression | NEXUS | Planned | Not yet implemented | - |
+| 10 | Context compression | NEXUS | Keep | 4 strategies (truncate/sliding_window/priority/summarize) | ygn-brain/context_compression.py |
 | 11 | MCP client | NEXUS | Adapt | Async subprocess MCP client | ygn-brain/mcp_client.py |
-| 12 | OpenTelemetry | NEXUS | Planned | Deps added, traces not emitted | - |
+| 12 | OpenTelemetry | NEXUS | Keep | YgnTracer + SpanGuard (Rust + Python) | ygn-core/telemetry.rs, ygn-brain/telemetry.py |
 | 13 | Analytics dashboard | NEXUS | Drop | Post-MVP | - |
 | 14 | React UI | NEXUS | Drop | Out of scope | - |
 | 15 | REST API (Cerebro) | NEXUS | Drop | MCP replaces HTTP for tools | - |
 | 16 | Agent drivers (Gemini/Claude) | NEXUS | Planned | StubProvider only | ygn-core/provider.rs |
-| 17 | SuccessMemory | NEXUS | Planned | Past solutions store | - |
-| 18 | DyLAN metrics | NEXUS | Planned | Agent performance tracking | - |
-| 19 | Event sourcing | NEXUS | Planned | FSM event replay | - |
+| 17 | SuccessMemory | NEXUS | Keep | Past solutions store with best_mode_for() | ygn-brain/success_memory.py |
+| 18 | DyLAN metrics | NEXUS | Keep | DyLANTracker with rank/prune | ygn-brain/dylan_metrics.py |
+| 19 | Event sourcing | NEXUS | Keep | FSMEvent + InMemoryEventStore with replay/snapshot | ygn-brain/event_sourcing.py |
 | 20 | CLI + daemon | ZeroClaw | Adapt | CLI with 8 subcommands | ygn-core/main.rs |
 | 21 | Gateway (Axum) | ZeroClaw | Keep | HTTP gateway with /health | ygn-core/gateway.rs |
 | 22 | Config + JSON schema | ZeroClaw | Keep | NodeConfig with schema export | ygn-core/config.rs |
@@ -41,10 +41,10 @@ Maps capabilities from upstream sources to Y-GN target modules.
 | 28 | Security (credential scrub) | ZeroClaw | Keep | Regex-based redaction | ygn-core/security.rs |
 | 29 | Sandbox profiles | ZeroClaw | Adapt | 4 profiles, path traversal prevention | ygn-core/sandbox.rs |
 | 30 | Landlock (OS sandbox) | ZeroClaw | Planned | Not implemented on Windows | - |
-| 31 | Channels (Telegram/Discord/Matrix) | ZeroClaw | Planned | Traits exist, no adapters | - |
+| 31 | Channels (Telegram/Discord/Matrix) | ZeroClaw | Adapt | TelegramChannel with mock transport | ygn-core/telegram.rs |
 | 32 | Tunnels (cloudflared/tailscale) | ZeroClaw | Planned | Not implemented | - |
 | 33 | Hardware/peripherals | ZeroClaw | Adapt | SimulatedHardware + HardwareTool | ygn-core/hardware.rs |
-| 34 | Skills system | ZeroClaw | Planned | Tool registry covers basics | - |
+| 34 | Skills system | ZeroClaw | Keep | SkillDefinition + SkillRegistry + SkillExecutor (topo sort) | ygn-core/skills.rs |
 | 35 | uACP codec | Y-GN | Keep | Binary wire format, Rust+Python | ygn-core/uacp.rs, ygn-brain/uacp.py |
 | 36 | Node registry | Y-GN | Keep | InMemoryRegistry + discovery | ygn-core/registry.rs |
 | 37 | Dynamic teaming | Y-GN | Keep | TeamBuilder + FlowController | ygn-brain/teaming.py |
