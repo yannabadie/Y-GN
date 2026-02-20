@@ -41,6 +41,30 @@ make test    # or: just test
 # Sandbox escape tests + SSRF/path-traversal/prompt-injection regression suite
 ```
 
+### CLI commands (ygn-core)
+```bash
+ygn-core status                # Show node status
+ygn-core gateway --bind 0.0.0.0:3000  # Start HTTP gateway
+ygn-core config schema         # Export config JSON schema
+ygn-core tools list            # List registered tools
+ygn-core providers list        # List registered LLM providers
+ygn-core skills list           # List registered skills
+ygn-core mcp                   # Start MCP server over stdio
+ygn-core registry list         # List registered nodes
+ygn-core registry self-info    # Show this node's info
+ygn-core diagnose              # Run diagnostics on stdin
+```
+
+### Gateway HTTP routes
+- `GET /health` — Service health check
+- `GET /providers` — List all configured LLM providers with capabilities
+- `GET /health/providers` — Health status of all providers (circuit breaker state)
+
+### Test counts
+- Rust (ygn-core): 276+ tests
+- Python (ygn-brain): 195+ tests
+- Total: 471+ tests
+
 ## Architecture
 
 ### Brain↔Core separation
@@ -63,12 +87,40 @@ The former monolithic `OrchestratorV7` is decomposed into:
 
 Swarm modes: Parallel, Sequential, RedBlue, PingPong, LeadSupport, Specialist.
 
+LLM integration:
+- **LLMProvider** — abstract base class for provider adapters (StubLLMProvider for testing)
+- **ProviderRouter** — routes tasks to appropriate models based on ModelSelector policies
+- **HiveMind.run_with_provider()** — async LLM-backed pipeline execution
+- **Orchestrator.run_async()** — async orchestration with provider support
+
+### Multi-Provider LLM Architecture
+Y-GN supports 4 LLM providers via a unified `Provider` trait:
+- **Claude** (Anthropic Messages API) — `claude-*` models
+- **OpenAI** (Chat Completions API) — `gpt-*`, `o1-*`, `o3-*`, `o4-*`, `chatgpt-*` models
+- **Gemini** (Google Generative AI API) — `gemini-*` models
+- **Ollama** (local inference) — `llama3`, `mistral`, etc.
+
+Key Rust modules:
+- `multi_provider.rs` — ClaudeProvider, OpenAIProvider, GeminiProvider, OllamaProvider, ProviderRegistry
+- `credential_vault.rs` — Secure API key management with zero-on-drop
+- `rate_limiter.rs` — Token-bucket per-provider rate limiting
+- `provider_health.rs` — Health tracking + circuit breaker (5 consecutive failures)
+
+Key Python modules:
+- `provider.py` — LLMProvider ABC + StubLLMProvider
+- `provider_router.py` — ProviderRouter + ModelSelector for task-based model selection
+- `hivemind.py` — HiveMind.run_with_provider() for async LLM-backed pipeline
+- `orchestrator.py` — Orchestrator.run_async() for async orchestration
+
 ### ygn-core internals
 Trait-based subsystems: `providers`, `channels`, `tools`, `memory`, `security`, `runtime`. Key components:
-- CLI + daemon + gateway (Axum)
-- Channels (Telegram, Discord, Matrix, etc.) + tunnels (cloudflared, tailscale, ngrok)
+- CLI + daemon + gateway (Axum) with `/health`, `/providers`, `/health/providers` routes
+- Multi-provider LLM: ClaudeProvider, OpenAIProvider, GeminiProvider, OllamaProvider + ProviderRegistry
+- Credential vault (zero-on-drop), rate limiter (token-bucket), provider health (circuit breaker)
+- Channels (Telegram, Discord, Matrix) + tunnels (cloudflared, tailscale, ngrok)
 - WASM/WASI sandbox with profiles: `no-net`, `net`, `read-only-fs`, `scratch-fs`
 - Memory engine (SQLite) + caches
+- Skills system with topological sort execution
 - Config with JSON schema export; fields `ygn.node_role` (edge/core/brain-proxy) and `trust_tier`
 
 ### Memory subsystem (3-tier)
@@ -110,9 +162,9 @@ Always read these files at session start. Update them when significant changes o
 
 ## Milestone Sequence
 
-M0 (Bootstrap) → M1 (Core usable) → M2 (Brain usable) → M3 (Brain↔Core integration) → M4 (Secure sandbox) → M5 (Memory v1) → M6 (IoA distributed) → M7 (Self-healing) → M8 (Release)
+M0 (Bootstrap) → M1 (Core usable) → M2 (Brain usable) → M3 (Brain↔Core integration) → M4 (Secure sandbox) → M5 (Memory v1) → M6 (IoA distributed) → M7 (Self-healing) → M8 (Release) → Post-MVP (Multi-Provider LLM)
 
-The ROADMAP.md YAML block is the authoritative source for epic/task details and acceptance criteria.
+All milestones complete. The ROADMAP.md YAML block is the authoritative source for epic/task details and acceptance criteria.
 
 ## Key Constraints
 

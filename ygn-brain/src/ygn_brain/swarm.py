@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+import asyncio
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import StrEnum
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from .provider import LLMProvider
 
 
 class SwarmMode(StrEnum):
@@ -203,3 +207,175 @@ class SwarmEngine:
         }
         executor = self._executors.get(analysis.suggested_mode, self._fallback)
         return executor.execute(context)
+
+    async def execute_with_provider(
+        self,
+        task: str,
+        provider: LLMProvider,
+    ) -> SwarmResult:
+        """Execute a task using a real LLM provider.
+
+        Analyzes the task to determine complexity and mode, then delegates to
+        mode-specific LLM execution logic:
+
+        - **Parallel**: sends multiple prompts concurrently via ``asyncio.gather``.
+        - **Sequential**: chains LLM calls so the output of one feeds into the next.
+        - **Specialist**: uses a focused domain prompt for expert-level tasks.
+        - All other modes fall back to a single LLM call.
+
+        Existing :meth:`run` is unaffected — this is a new async path.
+        """
+        analysis = self._analyzer.analyze(task)
+        mode = analysis.suggested_mode
+
+        if mode == SwarmMode.PARALLEL:
+            return await self._run_parallel(task, analysis, provider)
+        if mode == SwarmMode.SEQUENTIAL:
+            return await self._run_sequential(task, analysis, provider)
+        if mode == SwarmMode.SPECIALIST:
+            return await self._run_specialist(task, analysis, provider)
+        # Fallback: single LLM call for unmapped modes
+        return await self._run_single(task, mode, provider)
+
+    # ------------------------------------------------------------------
+    # Provider-backed mode implementations
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    async def _run_parallel(
+        task: str,
+        analysis: TaskAnalysis,
+        provider: LLMProvider,
+    ) -> SwarmResult:
+        """Fan-out the task to multiple agents concurrently."""
+        from .provider import ChatMessage, ChatRequest, ChatRole
+
+        model = "default"
+        prompts = [
+            f"As a {domain} specialist, address the following task:\n{task}"
+            for domain in analysis.domains
+        ]
+
+        async def _call(prompt: str) -> str:
+            resp = await provider.chat(
+                ChatRequest(
+                    model=model,
+                    messages=[
+                        ChatMessage(role=ChatRole.SYSTEM, content="You are a specialist agent."),
+                        ChatMessage(role=ChatRole.USER, content=prompt),
+                    ],
+                )
+            )
+            return resp.content
+
+        results = await asyncio.gather(*[_call(p) for p in prompts])
+        combined = "\n---\n".join(results)
+        return SwarmResult(
+            mode=SwarmMode.PARALLEL,
+            output=combined,
+            metadata={
+                "agents": len(prompts),
+                "domains": analysis.domains,
+                "strategy": "fan-out-fan-in",
+            },
+        )
+
+    @staticmethod
+    async def _run_sequential(
+        task: str,
+        analysis: TaskAnalysis,  # noqa: ARG004
+        provider: LLMProvider,
+    ) -> SwarmResult:
+        """Chain LLM calls — each step's output feeds into the next."""
+        from .provider import ChatMessage, ChatRequest, ChatRole
+
+        model = "default"
+        steps = ["understand", "plan", "execute"]
+        current = task
+        for step in steps:
+            resp = await provider.chat(
+                ChatRequest(
+                    model=model,
+                    messages=[
+                        ChatMessage(
+                            role=ChatRole.SYSTEM,
+                            content=f"You are performing step '{step}' in a sequential pipeline.",
+                        ),
+                        ChatMessage(role=ChatRole.USER, content=current),
+                    ],
+                )
+            )
+            current = resp.content
+        return SwarmResult(
+            mode=SwarmMode.SEQUENTIAL,
+            output=current,
+            metadata={
+                "agents": 1,
+                "steps": steps,
+                "strategy": "chain",
+            },
+        )
+
+    @staticmethod
+    async def _run_specialist(
+        task: str,
+        analysis: TaskAnalysis,
+        provider: LLMProvider,
+    ) -> SwarmResult:
+        """Use a focused domain prompt for expert-level tasks."""
+        from .provider import ChatMessage, ChatRequest, ChatRole
+
+        model = "default"
+        domain_list = ", ".join(analysis.domains)
+        resp = await provider.chat(
+            ChatRequest(
+                model=model,
+                messages=[
+                    ChatMessage(
+                        role=ChatRole.SYSTEM,
+                        content=(
+                            f"You are an expert specialist in: {domain_list}. "
+                            "Provide a thorough, expert-level response."
+                        ),
+                    ),
+                    ChatMessage(role=ChatRole.USER, content=task),
+                ],
+            )
+        )
+        return SwarmResult(
+            mode=SwarmMode.SPECIALIST,
+            output=resp.content,
+            metadata={
+                "agents": len(analysis.domains),
+                "domains": analysis.domains,
+                "strategy": "expert-routing",
+            },
+        )
+
+    @staticmethod
+    async def _run_single(
+        task: str,
+        mode: SwarmMode,
+        provider: LLMProvider,
+    ) -> SwarmResult:
+        """Fallback: single LLM call for any unmapped mode."""
+        from .provider import ChatMessage, ChatRequest, ChatRole
+
+        model = "default"
+        resp = await provider.chat(
+            ChatRequest(
+                model=model,
+                messages=[
+                    ChatMessage(
+                        role=ChatRole.SYSTEM,
+                        content=f"You are operating in '{mode}' mode.",
+                    ),
+                    ChatMessage(role=ChatRole.USER, content=task),
+                ],
+            )
+        )
+        return SwarmResult(
+            mode=mode,
+            output=resp.content,
+            metadata={"agents": 1, "strategy": mode.value},
+        )

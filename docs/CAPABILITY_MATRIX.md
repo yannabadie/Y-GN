@@ -26,7 +26,7 @@ Maps capabilities from upstream sources to Y-GN target modules.
 | 13 | Analytics dashboard | NEXUS | Drop | Post-MVP | - |
 | 14 | React UI | NEXUS | Drop | Out of scope | - |
 | 15 | REST API (Cerebro) | NEXUS | Drop | MCP replaces HTTP for tools | - |
-| 16 | Agent drivers (Gemini/Claude) | NEXUS | Planned | StubProvider only | ygn-core/provider.rs |
+| 16 | Agent drivers (Gemini/Claude) | NEXUS | Keep | 4 providers (Claude/OpenAI/Gemini/Ollama) + ProviderRegistry | ygn-core/multi_provider.rs, ygn-brain/provider.py |
 | 17 | SuccessMemory | NEXUS | Keep | Past solutions store with best_mode_for() | ygn-brain/success_memory.py |
 | 18 | DyLAN metrics | NEXUS | Keep | DyLANTracker with rank/prune | ygn-brain/dylan_metrics.py |
 | 19 | Event sourcing | NEXUS | Keep | FSMEvent + InMemoryEventStore with replay/snapshot | ygn-brain/event_sourcing.py |
@@ -41,7 +41,7 @@ Maps capabilities from upstream sources to Y-GN target modules.
 | 28 | Security (credential scrub) | ZeroClaw | Keep | Regex-based redaction | ygn-core/security.rs |
 | 29 | Sandbox profiles | ZeroClaw | Adapt | 4 profiles, path traversal prevention | ygn-core/sandbox.rs |
 | 30 | Landlock (OS sandbox) | ZeroClaw | Planned | Not implemented on Windows | - |
-| 31 | Channels (Telegram/Discord/Matrix) | ZeroClaw | Adapt | TelegramChannel with mock transport | ygn-core/telegram.rs |
+| 31 | Channels (Telegram/Discord/Matrix) | ZeroClaw | Adapt | Telegram + Discord + Matrix channels | ygn-core/telegram.rs, ygn-core/discord.rs, ygn-core/matrix.rs |
 | 32 | Tunnels (cloudflared/tailscale) | ZeroClaw | Planned | Not implemented | - |
 | 33 | Hardware/peripherals | ZeroClaw | Adapt | SimulatedHardware + HardwareTool | ygn-core/hardware.rs |
 | 34 | Skills system | ZeroClaw | Keep | SkillDefinition + SkillRegistry + SkillExecutor (topo sort) | ygn-core/skills.rs |
@@ -53,3 +53,8 @@ Maps capabilities from upstream sources to Y-GN target modules.
 | 40 | EvolutionEngine | Y-GN | Keep | Scaffold evolution loop | ygn-brain/evolution.py |
 | 41 | Policy engine | Y-GN | Keep | Risk assessment + decisions | ygn-core/policy.rs |
 | 42 | Audit log | Y-GN | Keep | JSONL security trail | ygn-core/audit.rs |
+| 43 | Credential vault | Y-GN | Keep | Secure API key management with zero-on-drop | ygn-core/credential_vault.rs |
+| 44 | Rate limiter | Y-GN | Keep | Token-bucket per-provider rate limiting | ygn-core/rate_limiter.rs |
+| 45 | Provider health | Y-GN | Keep | Health tracking + circuit breaker | ygn-core/provider_health.rs |
+| 46 | Provider routing (Python) | Y-GN | Keep | ProviderRouter + ModelSelector | ygn-brain/provider_router.py |
+| 47 | LLM-backed pipeline | Y-GN | Keep | HiveMind.run_with_provider + Orchestrator.run_async | ygn-brain/hivemind.py, orchestrator.py |

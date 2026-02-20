@@ -62,6 +62,21 @@
 - [x] 7 Python smoke tests + 3 Rust integration smoke tests
 - [x] 163 Rust + 108 Python tests — all gates green
 
+### Post-MVP — Multi-Provider LLM (COMPLETE)
+- [x] 4 provider adapters (Claude, OpenAI, Gemini, Ollama) with real HTTP API mapping
+- [x] ProviderRegistry with model-name routing (claude-* → claude, gpt-* → openai, etc.)
+- [x] Credential vault: secure API key management with zero-on-drop
+- [x] Rate limiter: token-bucket per provider
+- [x] Provider health: tracking + circuit breaker (5 consecutive failures)
+- [x] Python LLMProvider ABC + StubLLMProvider
+- [x] ProviderRouter + ModelSelector for task-based model selection
+- [x] HiveMind.run_with_provider() for async LLM-backed pipeline
+- [x] Orchestrator.run_async() for async orchestration
+- [x] Event sourcing, SuccessMemory, Context compression, DyLAN metrics
+- [x] Telegram, Discord, Matrix channels
+- [x] Skills system with topological sort
+- [x] OpenTelemetry (Rust + Python)
+
 ## Summary
 
-All milestones M0–M8 complete. Total: **163 Rust tests + 108 Python tests = 271 tests**.
+All milestones M0–M8 + Post-MVP complete. Total: **276+ Rust tests + 195+ Python tests = 471+ tests**.

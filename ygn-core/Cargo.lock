@@ -2758,6 +2758,7 @@ dependencies = [
  "base64",
  "chrono",
  "clap",
+ "http-body-util",
  "opentelemetry",
  "opentelemetry-otlp",
  "opentelemetry_sdk",
