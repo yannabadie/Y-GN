@@ -70,12 +70,17 @@ def test_cold_tier_persistence():
 def test_cross_tier_recall():
     """Recall searches all tiers when no specific tier is given."""
     mem = TieredMemoryService(hot_ttl_seconds=300.0)
-    mem.store("hot-item", "recent topic alpha", MemoryCategory.CONVERSATION,
-              tier=MemoryTier.HOT)
-    mem.store("warm-item", "indexed topic alpha", MemoryCategory.CORE,
-              tags=["test"], tier=MemoryTier.WARM)
-    mem.store("cold-item", "persistent topic alpha", MemoryCategory.CORE,
-              tags=["test"], tier=MemoryTier.COLD)
+    mem.store("hot-item", "recent topic alpha", MemoryCategory.CONVERSATION, tier=MemoryTier.HOT)
+    mem.store(
+        "warm-item", "indexed topic alpha", MemoryCategory.CORE, tags=["test"], tier=MemoryTier.WARM
+    )
+    mem.store(
+        "cold-item",
+        "persistent topic alpha",
+        MemoryCategory.CORE,
+        tags=["test"],
+        tier=MemoryTier.COLD,
+    )
 
     results = mem.recall("topic alpha", limit=10)
     assert len(results) == 3
@@ -87,10 +92,14 @@ def test_decay_evicts_hot_and_promotes_warm():
     """Decay evicts expired hot entries and promotes aged warm entries to cold."""
     mem = TieredMemoryService(hot_ttl_seconds=0.05, warm_max_age_seconds=0.05)
 
-    mem.store("hot-temp", "ephemeral data", MemoryCategory.CONVERSATION,
-              tier=MemoryTier.HOT)
-    mem.store("warm-aging", "aging indexed data", MemoryCategory.CORE,
-              tags=["aging"], tier=MemoryTier.WARM)
+    mem.store("hot-temp", "ephemeral data", MemoryCategory.CONVERSATION, tier=MemoryTier.HOT)
+    mem.store(
+        "warm-aging",
+        "aging indexed data",
+        MemoryCategory.CORE,
+        tags=["aging"],
+        tier=MemoryTier.WARM,
+    )
 
     # Wait for both TTL and warm age to expire
     time.sleep(0.1)
@@ -115,8 +124,7 @@ def test_decay_evicts_hot_and_promotes_warm():
 def test_promote_between_tiers():
     """Promote moves an entry to the target tier."""
     mem = TieredMemoryService(hot_ttl_seconds=300.0)
-    mem.store("fact", "important fact to remember", MemoryCategory.CORE,
-              tier=MemoryTier.HOT)
+    mem.store("fact", "important fact to remember", MemoryCategory.CORE, tier=MemoryTier.HOT)
 
     # Promote from hot to cold
     assert mem.promote("fact", MemoryTier.COLD) is True
@@ -153,10 +161,12 @@ def test_forget_removes_from_all_tiers():
 def test_session_filtering_across_tiers():
     """Session filtering works across all tiers."""
     mem = TieredMemoryService(hot_ttl_seconds=300.0)
-    mem.store("x", "session one data", MemoryCategory.CONVERSATION,
-              session_id="s1", tier=MemoryTier.HOT)
-    mem.store("y", "session two data", MemoryCategory.CONVERSATION,
-              session_id="s2", tier=MemoryTier.WARM)
+    mem.store(
+        "x", "session one data", MemoryCategory.CONVERSATION, session_id="s1", tier=MemoryTier.HOT
+    )
+    mem.store(
+        "y", "session two data", MemoryCategory.CONVERSATION, session_id="s2", tier=MemoryTier.WARM
+    )
 
     results = mem.recall("data", session_id="s1", limit=10)
     assert len(results) == 1

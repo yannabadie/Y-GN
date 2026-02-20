@@ -100,7 +100,9 @@ class McpClient:
     # ------------------------------------------------------------------
 
     async def _send_request(
-        self, method: str, params: dict[str, Any] | None = None,
+        self,
+        method: str,
+        params: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Send a JSON-RPC 2.0 request and wait for the matching response.
 

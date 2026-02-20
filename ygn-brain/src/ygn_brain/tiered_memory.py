@@ -153,37 +153,69 @@ class TieredMemoryService(MemoryService):
                 if entry.expires_at <= now:
                     expired_keys.append(key)
                     continue
-                if not self._matches(entry.content, entry.key, query_words, session_id,
-                                     entry.session_id, tags, entry.tags):
+                if not self._matches(
+                    entry.content,
+                    entry.key,
+                    query_words,
+                    session_id,
+                    entry.session_id,
+                    tags,
+                    entry.tags,
+                ):
                     continue
-                results.append(self._to_memory_entry(entry.key, entry.content,
-                                                     entry.category, entry.session_id))
+                results.append(
+                    self._to_memory_entry(
+                        entry.key, entry.content, entry.category, entry.session_id
+                    )
+                )
             for k in expired_keys:
                 del self._hot[k]
 
         # --- warm ---
         if tier is None or tier == MemoryTier.WARM:
             for warm_entry in self._warm.values():
-                if not self._matches(warm_entry.content, warm_entry.key, query_words,
-                                     session_id, warm_entry.session_id, tags,
-                                     warm_entry.tags):
+                if not self._matches(
+                    warm_entry.content,
+                    warm_entry.key,
+                    query_words,
+                    session_id,
+                    warm_entry.session_id,
+                    tags,
+                    warm_entry.tags,
+                ):
                     continue
-                results.append(self._to_memory_entry(warm_entry.key, warm_entry.content,
-                                                     warm_entry.category,
-                                                     warm_entry.session_id,
-                                                     timestamp=warm_entry.timestamp))
+                results.append(
+                    self._to_memory_entry(
+                        warm_entry.key,
+                        warm_entry.content,
+                        warm_entry.category,
+                        warm_entry.session_id,
+                        timestamp=warm_entry.timestamp,
+                    )
+                )
 
         # --- cold ---
         if tier is None or tier == MemoryTier.COLD:
             for cold_entry in self._cold.values():
-                if not self._matches(cold_entry.content, cold_entry.key, query_words,
-                                     session_id, cold_entry.session_id, tags,
-                                     cold_entry.tags):
+                if not self._matches(
+                    cold_entry.content,
+                    cold_entry.key,
+                    query_words,
+                    session_id,
+                    cold_entry.session_id,
+                    tags,
+                    cold_entry.tags,
+                ):
                     continue
-                results.append(self._to_memory_entry(cold_entry.key, cold_entry.content,
-                                                     cold_entry.category,
-                                                     cold_entry.session_id,
-                                                     timestamp=cold_entry.timestamp))
+                results.append(
+                    self._to_memory_entry(
+                        cold_entry.key,
+                        cold_entry.content,
+                        cold_entry.category,
+                        cold_entry.session_id,
+                        timestamp=cold_entry.timestamp,
+                    )
+                )
 
         # Most recent first
         results.sort(key=lambda e: e.timestamp, reverse=True)
@@ -242,10 +274,7 @@ class TieredMemoryService(MemoryService):
             del self._hot[k]
 
         # Promote aged warm entries to cold
-        aged_warm = [
-            k for k, e in self._warm.items()
-            if (now - e.timestamp) >= self._warm_max_age
-        ]
+        aged_warm = [k for k, e in self._warm.items() if (now - e.timestamp) >= self._warm_max_age]
         for k in aged_warm:
             entry = self._warm.pop(k)
             self._cold[k] = ColdEntry(
@@ -300,9 +329,7 @@ class TieredMemoryService(MemoryService):
             timestamp=timestamp if timestamp is not None else time.time(),
         )
 
-    def _find_entry(
-        self, key: str
-    ) -> tuple[str, MemoryCategory, str | None, list[str]] | None:
+    def _find_entry(self, key: str) -> tuple[str, MemoryCategory, str | None, list[str]] | None:
         """Locate entry across tiers, returning (content, category, session_id, tags)."""
         if key in self._hot:
             h = self._hot[key]

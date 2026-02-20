@@ -86,9 +86,7 @@ class TaskAnalyzer:
             suggested_mode=suggested_mode,
         )
 
-    def _assess_complexity(
-        self, text: str, word_count: int, domains: list[str]
-    ) -> TaskComplexity:
+    def _assess_complexity(self, text: str, word_count: int, domains: list[str]) -> TaskComplexity:
         """Heuristic complexity assessment."""
         if word_count <= 3:
             return TaskComplexity.TRIVIAL
@@ -100,9 +98,7 @@ class TaskAnalyzer:
             return TaskComplexity.COMPLEX
         return TaskComplexity.MODERATE
 
-    def _suggest_mode(
-        self, complexity: TaskComplexity, domains: list[str]
-    ) -> SwarmMode:
+    def _suggest_mode(self, complexity: TaskComplexity, domains: list[str]) -> SwarmMode:
         """Suggest an execution mode based on analysis."""
         if complexity == TaskComplexity.TRIVIAL:
             return SwarmMode.SEQUENTIAL
