@@ -5,7 +5,7 @@ use ygn_core::diagnostics;
 use ygn_core::gateway;
 use ygn_core::hardware;
 use ygn_core::mcp;
-use ygn_core::provider::{self, Provider};
+use ygn_core::multi_provider::ProviderRegistry;
 use ygn_core::registry::{self, NodeRegistry};
 use ygn_core::skills;
 use ygn_core::tool;
@@ -135,16 +135,20 @@ async fn main() -> anyhow::Result<()> {
         },
         Commands::Providers { action } => match action {
             ProvidersAction::List => {
-                let stub = provider::StubProvider::default();
-                let caps = stub.capabilities();
-                println!("Registered providers:");
-                println!(
-                    "  - {} (tool_calling={}, vision={}, streaming={})",
-                    stub.name(),
-                    caps.native_tool_calling,
-                    caps.vision,
-                    caps.streaming
-                );
+                let registry = ProviderRegistry::from_env();
+                let names = registry.list();
+                println!("Registered providers ({}):", names.len());
+                for name in &names {
+                    let provider = registry.get(name).unwrap();
+                    let caps = provider.capabilities();
+                    println!(
+                        "  - {} (tool_calling={}, vision={}, streaming={})",
+                        provider.name(),
+                        caps.native_tool_calling,
+                        caps.vision,
+                        caps.streaming
+                    );
+                }
             }
         },
         Commands::Mcp => {
