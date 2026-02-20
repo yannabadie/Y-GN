@@ -77,6 +77,19 @@
 - [x] Skills system with topological sort
 - [x] OpenTelemetry (Rust + Python)
 
+### Post-MVP — Full Coverage Sprint (COMPLETE)
+- [x] Discord channel adapter with MockDiscordTransport
+- [x] Matrix channel adapter with MockMatrixTransport
+- [x] Gateway enhanced: GET /providers + GET /health/providers
+- [x] SwarmEngine.execute_with_provider() — async LLM-backed swarm modes
+- [x] Interactive REPL (sync + async modes)
+- [x] Landlock OS sandbox — cross-platform abstraction (enforced on Linux)
+- [x] TunnelManager — cloudflared/tailscale/ngrok lifecycle management
+- [x] ConversationMemory — multi-turn context window management
+- [x] AgentPersonality + PersonalityRegistry — 4 built-in agent personas
+- [x] Capability matrix: 0 Planned items remaining
+
 ## Summary
 
-All milestones M0–M8 + Post-MVP complete. Total: **276+ Rust tests + 195+ Python tests = 471+ tests**.
+All milestones M0–M8 + Post-MVP complete. Capability matrix: **49 rows, 0 Planned**.
+Total: **336 Rust tests + 244 Python tests = 580 tests**, all green.

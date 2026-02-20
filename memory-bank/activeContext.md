@@ -2,9 +2,9 @@
 
 ## Current Focus
 
-- [2026-02-20] Multi-provider LLM support complete
-- Full roadmap M0–M8 executed + post-MVP + multi-provider
-- System supports Claude, OpenAI/Codex, Gemini, Ollama
+- [2026-02-20] All milestones + post-MVP COMPLETE — 0 Planned items remaining
+- Full system: 9 milestones + 2 post-MVP sprints, 580 tests
+- Multi-provider LLM support: Claude, OpenAI/Codex, Gemini, Ollama
 
 ## Completed Today
 
@@ -13,17 +13,24 @@
 - Credential vault with zero-on-drop security
 - Token-bucket rate limiter per provider
 - Provider health tracking + circuit breaker
-- Python LLM provider abstraction + ProviderRouter
+- Python LLM provider abstraction + ProviderRouter + ModelSelector
 - HiveMind pipeline with async LLM execution
-- Orchestrator with async provider support
+- SwarmEngine with async LLM-backed execution modes
+- Discord + Matrix channel adapters
+- Landlock OS sandbox (cross-platform)
+- Tunnel management (cloudflared/tailscale/ngrok)
+- Conversation memory with context window limits
+- Agent personality system with 4 built-in personas
+- Enhanced gateway: /providers + /health/providers
+- Interactive REPL (sync + async)
 
 ## Test Counts
 
-- Rust: 276+ tests
-- Python: 195+ tests
-- Total: 471+ tests, all green
+- Rust: 336 tests (333 unit + 3 smoke integration)
+- Python: 244 tests
+- Total: 580 tests, all green
 
 ## Current Blockers
 
-- None — system fully operational with stub providers
+- None — capability matrix 100% complete
 - Real LLM calls require API keys (ANTHROPIC_API_KEY, OPENAI_API_KEY, GEMINI_API_KEY)
