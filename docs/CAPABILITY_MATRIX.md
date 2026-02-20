@@ -40,9 +40,9 @@ Maps capabilities from upstream sources to Y-GN target modules.
 | 27 | Observer trait | ZeroClaw | Keep | VerboseObserver + NoopObserver | ygn-core/observer.rs |
 | 28 | Security (credential scrub) | ZeroClaw | Keep | Regex-based redaction | ygn-core/security.rs |
 | 29 | Sandbox profiles | ZeroClaw | Adapt | 4 profiles, path traversal prevention | ygn-core/sandbox.rs |
-| 30 | Landlock (OS sandbox) | ZeroClaw | Planned | Not implemented on Windows | - |
+| 30 | Landlock (OS sandbox) | ZeroClaw | Adapt | Cross-platform abstraction, enforced on Linux only | ygn-core/landlock.rs |
 | 31 | Channels (Telegram/Discord/Matrix) | ZeroClaw | Adapt | Telegram + Discord + Matrix channels | ygn-core/telegram.rs, ygn-core/discord.rs, ygn-core/matrix.rs |
-| 32 | Tunnels (cloudflared/tailscale) | ZeroClaw | Planned | Not implemented | - |
+| 32 | Tunnels (cloudflared/tailscale) | ZeroClaw | Adapt | TunnelManager with cloudflared/tailscale/ngrok stubs | ygn-core/tunnel.rs |
 | 33 | Hardware/peripherals | ZeroClaw | Adapt | SimulatedHardware + HardwareTool | ygn-core/hardware.rs |
 | 34 | Skills system | ZeroClaw | Keep | SkillDefinition + SkillRegistry + SkillExecutor (topo sort) | ygn-core/skills.rs |
 | 35 | uACP codec | Y-GN | Keep | Binary wire format, Rust+Python | ygn-core/uacp.rs, ygn-brain/uacp.py |

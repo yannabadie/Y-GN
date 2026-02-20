@@ -6,6 +6,7 @@ __version__ = "0.1.0"
 
 from .context import ContextBuilder, ExecutionContext
 from .context_compression import CompressedContext, CompressionStrategy, ContextCompressor
+from .conversation import ConversationMemory, ConversationTurn
 from .dylan_metrics import AgentMetrics, DyLANTracker
 from .event_sourcing import EventStore, FSMEvent, InMemoryEventStore
 from .evidence import EvidenceEntry, EvidencePack
@@ -24,6 +25,7 @@ from .hivemind import HiveMindPipeline, PhaseResult
 from .mcp_client import McpClient, McpError
 from .memory import InMemoryBackend, MemoryCategory, MemoryEntry, MemoryService
 from .orchestrator import Orchestrator
+from .personality import AgentPersonality, PersonalityRegistry, PersonalityTrait
 from .provider import (
     ChatMessage,
     ChatRequest,
@@ -85,6 +87,7 @@ from .vla_adapter import (
 
 __all__ = [
     "AgentMetrics",
+    "AgentPersonality",
     "AgentProfile",
     "ChatMessage",
     "ChatRequest",
@@ -95,6 +98,8 @@ __all__ = [
     "CompressionStrategy",
     "ContextBuilder",
     "ContextCompressor",
+    "ConversationMemory",
+    "ConversationTurn",
     "DistributedSwarmEngine",
     "DyLANTracker",
     "EventStore",
@@ -129,6 +134,8 @@ __all__ = [
     "ModelSelector",
     "Orchestrator",
     "ParallelExecutor",
+    "PersonalityRegistry",
+    "PersonalityTrait",
     "Phase",
     "PhaseResult",
     "ProviderCapabilities",
