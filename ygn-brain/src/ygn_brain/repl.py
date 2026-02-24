@@ -52,17 +52,19 @@ def main() -> None:
 async def async_main() -> None:
     """Async entry point using real LLM providers when available."""
     provider: LLMProvider
+    print("Y-GN Brain REPL v0.1.0 (async)")
     if os.environ.get("ANTHROPIC_API_KEY"):
-        print("Y-GN Brain REPL v0.1.0 (async)")
-        print("Using Claude provider (ANTHROPIC_API_KEY detected)")
+        # TODO: wire real Claude provider when available
+        print("Note: ANTHROPIC_API_KEY detected but real providers not yet shipped.")
+        print("Using StubLLMProvider (deterministic responses)")
         provider = StubLLMProvider()
     elif os.environ.get("OPENAI_API_KEY"):
-        print("Y-GN Brain REPL v0.1.0 (async)")
-        print("Using OpenAI provider (OPENAI_API_KEY detected)")
+        # TODO: wire real OpenAI provider when available
+        print("Note: OPENAI_API_KEY detected but real providers not yet shipped.")
+        print("Using StubLLMProvider (deterministic responses)")
         provider = StubLLMProvider()
     else:
-        print("Y-GN Brain REPL v0.1.0 (async)")
-        print("Using StubLLMProvider (no API keys detected)")
+        print("Using StubLLMProvider (set ANTHROPIC_API_KEY for Claude)")
         provider = StubLLMProvider()
 
     print("Type 'quit' or 'exit' to exit, 'status' for pipeline info")

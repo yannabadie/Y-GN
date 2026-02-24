@@ -89,7 +89,17 @@
 - [x] AgentPersonality + PersonalityRegistry — 4 built-in agent personas
 - [x] Capability matrix: 0 Planned items remaining
 
+### v0.1.0 MVP Release (2026-02-24)
+- [x] Fixed MCP tools/call nested runtime panic (block_in_place)
+- [x] Fixed echo tool argument schema in docs/examples/tests (text → input)
+- [x] Fixed REPL async_main() false provider announcements
+- [x] Fixed Makefile for Windows MSVC cross-platform builds
+- [x] Added echo schema regression test
+- [x] Created CHANGELOG.md
+- [x] Updated README.md with release section
+- [x] E2E demo verified: McpClient → ygn-core mcp → echo tool → response
+
 ## Summary
 
-All milestones M0–M8 + Post-MVP complete. Capability matrix: **49 rows, 0 Planned**.
-Total: **336 Rust tests + 244 Python tests = 580 tests**, all green.
+All milestones M0–M8 + Post-MVP complete. **v0.1.0 MVP released 2026-02-24.**
+Total: **336 Rust tests + 245 Python tests = 581 tests**, all green.

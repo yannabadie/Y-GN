@@ -280,13 +280,17 @@ impl McpServer {
             .get(name)
             .ok_or_else(|| (INVALID_PARAMS, format!("Tool not found: {name}")))?;
 
-        // Run the async tool execution inside a blocking tokio runtime.
-        let rt = tokio::runtime::Runtime::new()
-            .map_err(|e| (INVALID_PARAMS, format!("Runtime error: {e}")))?;
-
-        let result = rt
-            .block_on(tool.execute(arguments))
-            .map_err(|e| (INVALID_PARAMS, format!("Tool execution error: {e}")))?;
+        // Run the async tool execution synchronously.
+        // If we are already inside a tokio runtime (e.g. main is #[tokio::main]),
+        // use block_in_place + the existing handle; otherwise create a new runtime.
+        let result = if let Ok(handle) = tokio::runtime::Handle::try_current() {
+            tokio::task::block_in_place(|| handle.block_on(tool.execute(arguments)))
+        } else {
+            let rt = tokio::runtime::Runtime::new()
+                .map_err(|e| (INVALID_PARAMS, format!("Runtime error: {e}")))?;
+            rt.block_on(tool.execute(arguments))
+        }
+        .map_err(|e| (INVALID_PARAMS, format!("Tool execution error: {e}")))?;
 
         if result.success {
             Ok(json!({

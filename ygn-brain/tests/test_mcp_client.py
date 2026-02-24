@@ -51,10 +51,16 @@ _MOCK_SERVER_SCRIPT = textwrap.dedent("""\
                     "tools": [
                         {
                             "name": "echo",
-                            "description": "Echoes input",
+                            "description": "Echoes the provided input back as output",
                             "inputSchema": {
                                 "type": "object",
-                                "properties": {"text": {"type": "string"}},
+                                "properties": {
+                                    "input": {
+                                        "type": "string",
+                                        "description": "Text to echo back",
+                                    },
+                                },
+                                "required": ["input"],
                             },
                         }
                     ]
@@ -68,7 +74,7 @@ _MOCK_SERVER_SCRIPT = textwrap.dedent("""\
                     "jsonrpc": "2.0",
                     "id": msg_id,
                     "result": {
-                        "content": [{"type": "text", "text": args.get("text", "")}]
+                        "content": [{"type": "text", "text": args.get("input", "")}]
                     },
                 })
             else:
@@ -125,7 +131,7 @@ def test_mcp_request_format_with_params() -> None:
         "jsonrpc": "2.0",
         "id": 1,
         "method": "tools/call",
-        "params": {"name": "echo", "arguments": {"text": "hi"}},
+        "params": {"name": "echo", "arguments": {"input": "hi"}},
     }
     encoded = json.dumps(message, separators=(",", ":"))
     decoded = json.loads(encoded)
@@ -204,7 +210,7 @@ async def test_list_tools_via_mock_server() -> None:
 async def test_call_tool_via_mock_server() -> None:
     """tools/call returns the echoed text through the mock server."""
     async with McpClient(core_command=_mock_server_command()) as client:
-        result = await client.call_tool("echo", {"text": "ping"})
+        result = await client.call_tool("echo", {"input": "ping"})
         assert result == "ping"
 
 
@@ -245,5 +251,36 @@ async def test_tool_bridge_execute() -> None:
     """McpToolBridge.execute forwards the call through MCP."""
     async with McpClient(core_command=_mock_server_command()) as client:
         bridge = McpToolBridge(client)
-        result = await bridge.execute("echo", {"text": "hello bridge"})
+        result = await bridge.execute("echo", {"input": "hello bridge"})
         assert result == "hello bridge"
+
+
+# ---------------------------------------------------------------------------
+# Schema regression tests — keep mock aligned with real ygn-core
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_echo_tool_schema_has_input_parameter() -> None:
+    """Regression: echo tool expects 'input' (not 'text') per ygn-core/src/tool.rs.
+
+    The real ygn-core EchoTool uses ``{"input": "..."}`` as its parameter.
+    This test ensures the mock server matches and that call_tool works with
+    the correct parameter name.
+    """
+    async with McpClient(core_command=_mock_server_command()) as client:
+        tools = await client.list_tools()
+        echo = next(t for t in tools if t["name"] == "echo")
+        schema = echo["inputSchema"]
+        # Must have 'input' property (not 'text')
+        assert "input" in schema["properties"], (
+            "echo tool schema must use 'input' parameter, not 'text'"
+        )
+        assert "text" not in schema["properties"], (
+            "echo tool schema must NOT have 'text' — the parameter is 'input'"
+        )
+        assert schema.get("required") == ["input"]
+
+        # Calling with correct parameter works
+        result = await client.call_tool("echo", {"input": "regression check"})
+        assert result == "regression check"

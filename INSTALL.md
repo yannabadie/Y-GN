@@ -230,7 +230,7 @@ async def main():
         print("Available tools:", [t["name"] for t in tools])
 
         # Call the echo tool
-        reply = await client.call_tool("echo", {"text": "Hello from Brain!"})
+        reply = await client.call_tool("echo", {"input": "Hello from Brain!"})
         print("Echo reply:", reply)
 
 asyncio.run(main())

@@ -70,7 +70,7 @@ async def main() -> None:
         # --------------------------------------------------------------
         echo_input = "Hello from Brain via MCP!"
         print(f"Calling echo tool with: {echo_input!r}")
-        reply = await client.call_tool("echo", {"text": echo_input})
+        reply = await client.call_tool("echo", {"input": echo_input})
         print(f"Echo reply: {reply}")
         print()
 

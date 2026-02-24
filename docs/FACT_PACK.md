@@ -75,6 +75,18 @@ Facts verified against the Y-GN codebase. Each item references the source file(s
 22. **Channel trait for message adapters (CLI, Telegram, Discord).** Defines `ChannelMessage` (inbound) and `SendMessage` (outbound) with channel name, sender, and metadata fields.
     — `ygn-core/src/channel.rs`
 
+23. **Echo tool parameter is `input`, not `text`.** The `EchoTool` in `ygn-core/src/tool.rs` defines its JSON Schema with `{"input": {"type": "string"}}` and `required: ["input"]`. Prior docs/examples/tests incorrectly used `{"text": "..."}`. Fixed in v0.1.0.
+    — `ygn-core/src/tool.rs:78-86`, `examples/03_mcp_integration.py`, `INSTALL.md`
+
+24. **REPL async_main() always uses StubLLMProvider regardless of API keys.** The function detects `ANTHROPIC_API_KEY` and `OPENAI_API_KEY` but has no real provider implementations in Python. Messages now accurately reflect this.
+    — `ygn-brain/src/ygn_brain/repl.py`
+
+25. **Mock MCP server in tests must mirror real ygn-core tool schemas.** A regression test (`test_echo_tool_schema_has_input_parameter`) now validates that the mock echo tool uses `input` (not `text`) matching the real `EchoTool`.
+    — `ygn-brain/tests/test_mcp_client.py`
+
+26. **MCP tools/call panics when main uses #[tokio::main].** The `handle_tools_call` method created a new `tokio::runtime::Runtime` inside a synchronous function called from `#[tokio::main]`, causing "Cannot start a runtime from within a runtime" panic. Fixed by using `Handle::try_current()` + `block_in_place` when an existing runtime is detected.
+    — `ygn-core/src/mcp.rs:284-291`
+
 ---
 
 ## Assumptions

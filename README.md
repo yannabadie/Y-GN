@@ -111,7 +111,28 @@ Y-GN/
 | M5 | Memory v1 -- tiered storage, temporal KG | Complete |
 | M6 | Distributed swarm -- registry, teaming, IoA | Complete |
 | M7 | Self-healing -- auto-diagnosis, scaffold evolution | Complete |
-| M8 | Release ready -- installer, docs, examples | In progress |
+| M8 | Release ready -- installer, docs, examples | Complete |
+
+## Release v0.1.0
+
+First MVP release (2026-02-24). Both ygn-core and ygn-brain are independently
+usable and integrate over MCP. See [CHANGELOG.md](CHANGELOG.md) for full details.
+
+**Quick verification:**
+
+```bash
+# 1. Build & install (see INSTALL.md for details)
+cd ygn-core && cargo build --release && cd ..
+cd ygn-brain && pip install -e .[dev] && cd ..
+
+# 2. Run all quality gates
+make test
+
+# 3. E2E demo: Brain calls Core tool via MCP
+python examples/03_mcp_integration.py
+```
+
+**Test counts:** 336 Rust + 245 Python = 581 tests.
 
 ## License
 
