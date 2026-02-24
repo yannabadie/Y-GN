@@ -35,6 +35,11 @@ class _ClaudeStub(StubLLMProvider):
         return "claude"
 
 
+class _CodexStub(StubLLMProvider):
+    def name(self) -> str:
+        return "codex"
+
+
 # ---------------------------------------------------------------------------
 # ProviderRouter — registration & lookup
 # ---------------------------------------------------------------------------
@@ -74,23 +79,23 @@ def test_route_claude_prefix():
 
 def test_route_gpt_prefix():
     router = ProviderRouter()
-    router.register(_OpenAIStub())
+    router.register(_CodexStub())
     provider = router.route("gpt-4o")
-    assert provider.name() == "openai"
+    assert provider.name() == "codex"
 
 
 def test_route_o1_prefix():
     router = ProviderRouter()
-    router.register(_OpenAIStub())
+    router.register(_CodexStub())
     provider = router.route("o1-preview")
-    assert provider.name() == "openai"
+    assert provider.name() == "codex"
 
 
 def test_route_o3_prefix():
     router = ProviderRouter()
-    router.register(_OpenAIStub())
+    router.register(_CodexStub())
     provider = router.route("o3-mini")
-    assert provider.name() == "openai"
+    assert provider.name() == "codex"
 
 
 def test_route_gemini_prefix():
@@ -171,19 +176,25 @@ def test_with_defaults_creates_router():
 def test_selector_trivial_task():
     selector = ModelSelector()
     model = selector.select(TaskComplexity.TRIVIAL)
-    assert "haiku" in model
+    assert "codex" in model
 
 
 def test_selector_expert_task():
     selector = ModelSelector()
     model = selector.select(TaskComplexity.EXPERT)
-    assert "opus" in model
+    assert "codex" in model
 
 
 def test_selector_moderate_task():
     selector = ModelSelector()
     model = selector.select(TaskComplexity.MODERATE)
-    assert "sonnet" in model
+    assert "codex" in model
+
+
+def test_selector_preferred_codex():
+    selector = ModelSelector()
+    model = selector.select(TaskComplexity.COMPLEX, preferred_provider="codex")
+    assert "codex" in model
 
 
 def test_selector_preferred_openai():
@@ -195,7 +206,7 @@ def test_selector_preferred_openai():
 def test_selector_preferred_gemini():
     selector = ModelSelector()
     model = selector.select(TaskComplexity.SIMPLE, preferred_provider="gemini")
-    assert "gemini" in model
+    assert model == "gemini-3.1-pro-preview"
 
 
 def test_selector_preferred_ollama():

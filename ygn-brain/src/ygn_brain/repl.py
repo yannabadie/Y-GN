@@ -3,23 +3,26 @@
 from __future__ import annotations
 
 import asyncio
-import os
 import sys
 from typing import Any
 
 from .orchestrator import Orchestrator
-from .provider import LLMProvider, StubLLMProvider
+from .provider_factory import ProviderFactory
 
 
 def main() -> None:
-    """Entry point for ``ygn-brain-repl`` command (synchronous)."""
+    """Entry point for ``ygn-brain-repl`` command (synchronous).
+
+    Uses :class:`ProviderFactory` to select the provider based on
+    ``YGN_LLM_PROVIDER`` env var.  Sync mode always uses stub because
+    the CLI providers require async I/O.
+    """
     print("Y-GN Brain REPL v0.1.0")
     print("Type 'quit' or 'exit' to exit, 'status' for pipeline info")
-    print("Using StubLLMProvider (set ANTHROPIC_API_KEY for Claude)")
+    print("Using StubLLMProvider (sync mode — use --async for CLI providers)")
     print()
 
-    provider: LLMProvider = StubLLMProvider()
-    orchestrator = Orchestrator(provider=provider)
+    orchestrator = Orchestrator()
 
     while True:
         try:
@@ -44,29 +47,21 @@ def main() -> None:
             print("Anything else is processed as a task through the pipeline")
             continue
 
-        # Run through orchestrator
+        # Run through orchestrator (sync uses stub pipeline)
         result = orchestrator.run(stripped)
         _print_result(result)
 
 
 async def async_main() -> None:
-    """Async entry point using real LLM providers when available."""
-    provider: LLMProvider
-    print("Y-GN Brain REPL v0.1.0 (async)")
-    if os.environ.get("ANTHROPIC_API_KEY"):
-        # TODO: wire real Claude provider when available
-        print("Note: ANTHROPIC_API_KEY detected but real providers not yet shipped.")
-        print("Using StubLLMProvider (deterministic responses)")
-        provider = StubLLMProvider()
-    elif os.environ.get("OPENAI_API_KEY"):
-        # TODO: wire real OpenAI provider when available
-        print("Note: OPENAI_API_KEY detected but real providers not yet shipped.")
-        print("Using StubLLMProvider (deterministic responses)")
-        provider = StubLLMProvider()
-    else:
-        print("Using StubLLMProvider (set ANTHROPIC_API_KEY for Claude)")
-        provider = StubLLMProvider()
+    """Async entry point — uses the provider resolved by ProviderFactory.
 
+    Set ``YGN_LLM_PROVIDER`` to ``codex``, ``gemini``, or ``stub``.
+    """
+    provider = ProviderFactory.create()
+    desc = ProviderFactory.describe(provider)
+
+    print("Y-GN Brain REPL v0.1.0 (async)")
+    print(f"Provider: {desc}")
     print("Type 'quit' or 'exit' to exit, 'status' for pipeline info")
     print()
 

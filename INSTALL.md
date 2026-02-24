@@ -243,6 +243,57 @@ See: [`examples/03_mcp_integration.py`](examples/03_mcp_integration.py)
 
 ---
 
+## 8. CLI LLM Providers (no API cost)
+
+Y-GN Brain supports LLM inference via CLI tools that use your existing
+subscriptions — no API keys or SDK charges required.
+
+### Supported providers
+
+| Provider | CLI tool | Default model | Env override |
+|----------|----------|---------------|--------------|
+| **Codex** | `codex` | `gpt-5.3-codex` | `YGN_CODEX_MODEL` |
+| **Gemini** | `gemini` | `gemini-3.1-pro-preview` | `YGN_GEMINI_MODEL` |
+| **Stub** | — | — | — |
+
+### Configuration
+
+Set `YGN_LLM_PROVIDER` to choose which provider to use:
+
+```bash
+# Use Codex CLI (requires codex installed and authenticated)
+export YGN_LLM_PROVIDER=codex
+
+# Use Gemini CLI (requires gemini installed and authenticated)
+export YGN_LLM_PROVIDER=gemini
+
+# Use stub (default — deterministic responses, no external calls)
+export YGN_LLM_PROVIDER=stub
+```
+
+Optional model override:
+
+```bash
+export YGN_CODEX_MODEL=gpt-5.3-codex
+export YGN_GEMINI_MODEL=gemini-3.1-pro-preview
+export YGN_LLM_TIMEOUT_SEC=300   # subprocess timeout (default 300s)
+```
+
+### Running with a real provider
+
+```bash
+# Async REPL with Codex
+YGN_LLM_PROVIDER=codex python -m ygn_brain.repl --async
+
+# Brain pipeline with Gemini
+YGN_LLM_PROVIDER=gemini python examples/02_brain_pipeline.py
+```
+
+> **Note:** Gemini CLI requires prior authentication (`gemini auth login`).
+> If authentication is missing, Y-GN will report a clear error.
+
+---
+
 ## Troubleshooting
 
 | Problem | Solution |

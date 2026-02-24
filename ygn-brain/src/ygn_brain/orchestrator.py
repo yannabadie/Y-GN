@@ -11,6 +11,7 @@ from .fsm import FSMState, Phase
 from .guard import GuardPipeline
 from .hivemind import HiveMindPipeline
 from .memory import MemoryService
+from .provider_factory import ProviderFactory
 
 if TYPE_CHECKING:
     from .provider import LLMProvider
@@ -33,7 +34,8 @@ class Orchestrator:
         self._memory_service = memory_service
         self._context_builder = ContextBuilder()
         self._hivemind = HiveMindPipeline()
-        self._provider = provider
+        # Use factory to resolve provider if none given explicitly
+        self._provider = provider if provider is not None else ProviderFactory.create()
         self._provider_router = provider_router
 
     def run(self, user_input: str) -> dict[str, Any]:
@@ -101,14 +103,11 @@ class Orchestrator:
         """Execute a full pipeline pass using the LLM provider.
 
         This async counterpart of :meth:`run` delegates cognitive phases to a
-        real LLM via the provider set at construction time.  Raises
-        ``RuntimeError`` if no provider was configured.
+        real LLM via the provider set at construction time.  The provider is
+        always set (via ``ProviderFactory.create()`` if none was given).
 
         Returns dict with ``result`` and ``session_id`` keys.
         """
-        if self._provider is None:
-            msg = "run_async requires a provider — pass one to Orchestrator()"
-            raise RuntimeError(msg)
 
         # Build execution context (guard + memory + evidence)
         ctx = self._context_builder.build(

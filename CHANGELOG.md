@@ -3,6 +3,43 @@
 All notable changes to Y-GN (Yggdrasil-Grid Nexus) are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.2.0] - 2026-02-24
+
+CLI LLM providers — real inference via Codex and Gemini CLIs, no API cost.
+
+### Added
+
+- **CodexCliProvider**: LLM inference via `codex exec` subprocess. Uses
+  existing Codex CLI authentication (subscription-based). Default model
+  `gpt-5.3-codex`, configurable via `YGN_CODEX_MODEL`.
+- **GeminiCliProvider**: LLM inference via `gemini` CLI subprocess with
+  JSON output parsing. Default model `gemini-3.1-pro-preview`, configurable
+  via `YGN_GEMINI_MODEL`.
+- **ProviderFactory**: Deterministic provider selection from `YGN_LLM_PROVIDER`
+  env var (`codex` | `gemini` | `stub`). Optional auto-fallback mode.
+- **Timeout control**: `YGN_LLM_TIMEOUT_SEC` env var (default 300s) for both
+  CLI providers.
+- 52 new tests for providers and factory (16 codex + 19 gemini + 17 factory).
+
+### Changed
+
+- **Orchestrator** now uses `ProviderFactory.create()` when no provider is
+  given explicitly (was: raise RuntimeError). Always has a working provider.
+- **ProviderRouter** prefix map: `gpt-*`, `o1-*`, `o3-*`, `o4-*` now route
+  to `codex` provider (was: `openai`).
+- **ModelSelector** default models: all complexity levels default to
+  `gpt-5.3-codex` (was: Claude models). Gemini preferred provider returns
+  `gemini-3.1-pro-preview`.
+- **REPL** `async_main()` uses `ProviderFactory` and displays the resolved
+  provider name and model clearly.
+- **Example 02** displays which provider is in use and respects
+  `YGN_LLM_PROVIDER`.
+
+### Fixed
+
+- Example 02 evidence printing: `event_type` -> `kind` (matching the actual
+  `EvidenceEntry` field name).
+
 ## [0.1.0] - 2026-02-24
 
 First public MVP release. Brain and Core are independently usable and

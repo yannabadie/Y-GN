@@ -108,10 +108,12 @@ async def test_orchestrator_run_async_with_provider():
 
 
 @pytest.mark.asyncio
-async def test_orchestrator_run_async_no_provider_raises():
+async def test_orchestrator_run_async_uses_factory_default():
+    """When no provider is given, the Orchestrator uses ProviderFactory (stub by default)."""
     orch = Orchestrator()
-    with pytest.raises(RuntimeError, match="run_async requires a provider"):
-        await orch.run_async("hello")
+    result = await orch.run_async("hello from factory")
+    assert result["session_id"]
+    assert "stub response" in result["result"].lower() or result["result"]
 
 
 def test_orchestrator_run_sync_still_works():

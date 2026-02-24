@@ -4,29 +4,32 @@
 Demonstrates running a user query through the Brain's 7-phase HiveMind
 pipeline and inspecting the result along with the Evidence Pack session ID.
 
+The provider is selected via YGN_LLM_PROVIDER (codex | gemini | stub).
+Default: stub (deterministic, no external calls).
+
 Prerequisites:
     - ygn-brain installed (see INSTALL.md, step 4)
       pip install -e ygn-brain/.[dev]
 
 Usage:
     python examples/02_brain_pipeline.py
+    YGN_LLM_PROVIDER=codex python examples/02_brain_pipeline.py
 """
 
 from __future__ import annotations
 
-from ygn_brain import Orchestrator
+from ygn_brain import Orchestrator, ProviderFactory
 
 
 def main() -> None:
     # ------------------------------------------------------------------
     # 1. Create an Orchestrator instance.
-    #    The Orchestrator wires together:
-    #      - GuardPipeline  (input safety checks)
-    #      - ContextBuilder (session context + memory)
-    #      - HiveMindPipeline (7-phase reasoning)
-    #      - EvidencePack   (auditable trace of every decision)
+    #    The provider is resolved via ProviderFactory based on
+    #    YGN_LLM_PROVIDER env var (default: stub).
     # ------------------------------------------------------------------
-    orchestrator = Orchestrator()
+    provider = ProviderFactory.create()
+    print(f"Provider: {ProviderFactory.describe(provider)}")
+    orchestrator = Orchestrator(provider=provider)
 
     # ------------------------------------------------------------------
     # 2. Define a query and run it through the pipeline.
@@ -61,7 +64,7 @@ def main() -> None:
     print()
     print(f"Evidence Pack entries: {len(orchestrator.evidence.entries)}")
     for entry in orchestrator.evidence.entries:
-        print(f"  [{entry.phase}] {entry.event_type}: {entry.data}")
+        print(f"  [{entry.phase}] {entry.kind}: {entry.data}")
 
 
 if __name__ == "__main__":

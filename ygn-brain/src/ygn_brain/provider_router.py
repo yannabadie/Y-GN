@@ -11,9 +11,11 @@ from .swarm import TaskComplexity
 
 _PREFIX_MAP: dict[str, str] = {
     "claude": "claude",
-    "gpt": "openai",
-    "o1": "openai",
-    "o3": "openai",
+    "gpt": "codex",
+    "o1": "codex",
+    "o3": "codex",
+    "o4": "codex",
+    "chatgpt": "codex",
     "gemini": "gemini",
     "llama": "ollama",
     "mistral": "ollama",
@@ -109,11 +111,11 @@ class ProviderRouter:
 
 # Maps (complexity, requires_tools) to a default model name.
 _COMPLEXITY_MODELS: dict[TaskComplexity, str] = {
-    TaskComplexity.TRIVIAL: "claude-3-haiku-20240307",
-    TaskComplexity.SIMPLE: "claude-3-haiku-20240307",
-    TaskComplexity.MODERATE: "claude-3-5-sonnet-20241022",
-    TaskComplexity.COMPLEX: "claude-3-5-sonnet-20241022",
-    TaskComplexity.EXPERT: "claude-3-opus-20240229",
+    TaskComplexity.TRIVIAL: "gpt-5.3-codex",
+    TaskComplexity.SIMPLE: "gpt-5.3-codex",
+    TaskComplexity.MODERATE: "gpt-5.3-codex",
+    TaskComplexity.COMPLEX: "gpt-5.3-codex",
+    TaskComplexity.EXPERT: "gpt-5.3-codex",
 }
 
 
@@ -156,13 +158,15 @@ class ModelSelector:
         requires_vision: bool,  # noqa: ARG004
     ) -> str:
         """Pick a model name given a provider and complexity."""
+        if provider == "codex":
+            return "gpt-5.3-codex"
         if provider == "openai":
             if complexity in {TaskComplexity.EXPERT, TaskComplexity.COMPLEX}:
                 return "gpt-4o"
             return "gpt-4o-mini"
         if provider == "gemini":
-            return "gemini-1.5-pro"
+            return "gemini-3.1-pro-preview"
         if provider == "ollama":
             return "llama3"
-        # Default to Claude
-        return _COMPLEXITY_MODELS.get(complexity, "claude-3-5-sonnet-20241022")
+        # Default: use the complexity map (codex-based)
+        return _COMPLEXITY_MODELS.get(complexity, "gpt-5.3-codex")

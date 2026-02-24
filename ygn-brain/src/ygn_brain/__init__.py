@@ -4,6 +4,7 @@ from __future__ import annotations
 
 __version__ = "0.1.0"
 
+from .codex_provider import CodexCliError, CodexCliProvider
 from .context import ContextBuilder, ExecutionContext
 from .context_compression import CompressedContext, CompressionStrategy, ContextCompressor
 from .conversation import ConversationMemory, ConversationTurn
@@ -20,6 +21,7 @@ from .evolution import (
     SafetyGuard,
 )
 from .fsm import FSMState, Phase
+from .gemini_provider import GeminiCliError, GeminiCliProvider
 from .guard import GuardPipeline, GuardResult, InputGuard, ThreatLevel
 from .hivemind import HiveMindPipeline, PhaseResult
 from .mcp_client import McpClient, McpError
@@ -38,6 +40,7 @@ from .provider import (
     ToolCall,
     ToolSpec,
 )
+from .provider_factory import ProviderFactory
 from .provider_router import ModelSelector, ProviderRouter
 from .success_memory import SuccessMemory, SuccessRecord
 from .swarm import (
@@ -87,6 +90,8 @@ from .vla_adapter import (
 
 __all__ = [
     "AgentMetrics",
+    "CodexCliError",
+    "CodexCliProvider",
     "AgentPersonality",
     "AgentProfile",
     "ChatMessage",
@@ -116,6 +121,8 @@ __all__ = [
     "FlowController",
     "FlowPolicy",
     "GateCheckResult",
+    "GeminiCliError",
+    "GeminiCliProvider",
     "GuardPipeline",
     "GuardResult",
     "HiveMindPipeline",
@@ -139,6 +146,7 @@ __all__ = [
     "Phase",
     "PhaseResult",
     "ProviderCapabilities",
+    "ProviderFactory",
     "ProviderRouter",
     "SafetyGuard",
     "SequentialExecutor",
