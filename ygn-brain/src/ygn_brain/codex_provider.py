@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import os
 import shutil
+import subprocess
+import sys
 
 from .provider import (
     ChatRequest,
@@ -15,7 +18,7 @@ from .provider import (
     ToolSpec,
 )
 
-_DEFAULT_MODEL = "gpt-5.3-codex"
+_DEFAULT_MODEL = "gpt-5.2-codex"
 _DEFAULT_TIMEOUT = 300
 
 
@@ -34,7 +37,7 @@ class CodexCliProvider(LLMProvider):
     so no API key or SDK charges are incurred.
 
     Configuration via environment variables:
-        - ``YGN_CODEX_MODEL``: model name (default ``gpt-5.3-codex``)
+        - ``YGN_CODEX_MODEL``: model name (default ``gpt-5.2-codex``)
         - ``YGN_LLM_TIMEOUT_SEC``: subprocess timeout in seconds (default 300)
     """
 
@@ -64,7 +67,7 @@ class CodexCliProvider(LLMProvider):
         )
 
     async def chat(self, request: ChatRequest) -> ChatResponse:
-        """Send a chat request via ``codex exec``."""
+        """Send a chat request via ``codex exec --json --full-auto``."""
         # Build the prompt from messages
         prompt = self._build_prompt(request)
         model = request.model or self._model
@@ -78,17 +81,11 @@ class CodexCliProvider(LLMProvider):
             )
             raise CodexCliError(msg)
 
-        # Run codex exec
+        # Run codex exec with --json (structured JSONL) and --full-auto
+        # (auto-approve in sandbox to prevent hanging on approval prompts)
+        args = [codex_bin, "exec", prompt, "-m", model, "--json", "--full-auto"]
         try:
-            proc = await asyncio.create_subprocess_exec(
-                "codex",
-                "exec",
-                prompt,
-                "-m",
-                model,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-            )
+            proc = await self._spawn(args)
             stdout_bytes, stderr_bytes = await asyncio.wait_for(
                 proc.communicate(), timeout=self._timeout
             )
@@ -104,17 +101,13 @@ class CodexCliProvider(LLMProvider):
             msg = f"codex exec failed (exit {proc.returncode}): {detail}"
             raise CodexCliError(msg, returncode=proc.returncode)
 
-        # Estimate token usage from prompt/response word counts
-        prompt_tokens = len(prompt.split())
-        completion_tokens = len(stdout.split())
+        # Parse JSONL output to extract the agent_message and token usage
+        content, usage = self._parse_jsonl_response(stdout)
 
         return ChatResponse(
-            content=stdout,
+            content=content,
             tool_calls=[],
-            usage=TokenUsage(
-                prompt_tokens=prompt_tokens,
-                completion_tokens=completion_tokens,
-            ),
+            usage=usage,
         )
 
     async def chat_with_tools(
@@ -144,6 +137,32 @@ class CodexCliProvider(LLMProvider):
     # ------------------------------------------------------------------
 
     @staticmethod
+    async def _spawn(
+        args: list[str],
+    ) -> asyncio.subprocess.Process:
+        """Spawn a subprocess, handling Windows .CMD/.BAT scripts.
+
+        On Windows, npm-installed CLIs are ``.CMD`` batch scripts that
+        ``CreateProcess`` cannot execute directly.  We use
+        ``create_subprocess_shell`` with ``subprocess.list2cmdline``
+        to go through ``cmd.exe`` in that case.
+        """
+        if sys.platform == "win32" and args[0].lower().endswith(
+            (".cmd", ".bat")
+        ):
+            cmd_line = subprocess.list2cmdline(args)
+            return await asyncio.create_subprocess_shell(
+                cmd_line,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+        return await asyncio.create_subprocess_exec(
+            *args,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+
+    @staticmethod
     def _build_prompt(request: ChatRequest) -> str:
         """Flatten ChatRequest messages into a single prompt string."""
         parts: list[str] = []
@@ -157,3 +176,48 @@ class CodexCliProvider(LLMProvider):
             else:
                 parts.append(f"[{msg.role}] {msg.content}")
         return "\n\n".join(parts)
+
+    @staticmethod
+    def _parse_jsonl_response(stdout: str) -> tuple[str, TokenUsage]:
+        """Parse codex ``--json`` JSONL output.
+
+        Extracts the last ``agent_message`` text and token usage from
+        ``turn.completed`` events.
+
+        Returns:
+            (content, TokenUsage) tuple.
+        """
+        content_parts: list[str] = []
+        prompt_tokens = 0
+        completion_tokens = 0
+
+        for line in stdout.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                event = json.loads(line)
+            except (json.JSONDecodeError, ValueError):
+                continue
+
+            event_type = event.get("type", "")
+
+            # Extract agent messages
+            if event_type == "item.completed":
+                item = event.get("item", {})
+                if item.get("type") == "agent_message":
+                    text = item.get("text", "")
+                    if text:
+                        content_parts.append(text)
+
+            # Extract token usage
+            elif event_type == "turn.completed":
+                usage = event.get("usage", {})
+                prompt_tokens += usage.get("input_tokens", 0)
+                completion_tokens += usage.get("output_tokens", 0)
+
+        content = "\n".join(content_parts) if content_parts else stdout
+        return content, TokenUsage(
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+        )

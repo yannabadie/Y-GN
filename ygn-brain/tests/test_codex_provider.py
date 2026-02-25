@@ -15,7 +15,7 @@ from ygn_brain.provider import ChatMessage, ChatRequest, ChatRole, LLMProvider, 
 # ---------------------------------------------------------------------------
 
 
-def _make_request(content: str = "hello", model: str = "gpt-5.3-codex") -> ChatRequest:
+def _make_request(content: str = "hello", model: str = "gpt-5.2-codex") -> ChatRequest:
     return ChatRequest(
         model=model,
         messages=[ChatMessage(role=ChatRole.USER, content=content)],
@@ -59,7 +59,7 @@ def test_codex_provider_capabilities() -> None:
 
 def test_codex_provider_default_model() -> None:
     p = CodexCliProvider()
-    assert p.model == "gpt-5.3-codex"
+    assert p.model == "gpt-5.2-codex"
 
 
 def test_codex_provider_custom_model() -> None:
@@ -84,13 +84,23 @@ def test_codex_provider_env_timeout(monkeypatch: pytest.MonkeyPatch) -> None:
 # ---------------------------------------------------------------------------
 
 
+_JSONL_OK = "\n".join([
+    '{"type":"thread.started","thread_id":"test-123"}',
+    '{"type":"turn.started"}',
+    '{"type":"item.completed","item":{"id":"item_0",'
+    '"type":"agent_message","text":"This is the LLM response"}}',
+    '{"type":"turn.completed",'
+    '"usage":{"input_tokens":50,"output_tokens":10}}',
+])
+
+
 @pytest.mark.asyncio
 @patch("shutil.which", return_value="/usr/bin/codex")
 @patch("asyncio.create_subprocess_exec")
 async def test_codex_chat_success(
     mock_exec: AsyncMock, mock_which: MagicMock
 ) -> None:
-    proc = _mock_process(stdout="This is the LLM response")
+    proc = _mock_process(stdout=_JSONL_OK)
     mock_exec.return_value = proc
 
     p = CodexCliProvider()
@@ -99,8 +109,8 @@ async def test_codex_chat_success(
     assert resp.content == "This is the LLM response"
     assert resp.tool_calls == []
     assert resp.usage is not None
-    assert resp.usage.prompt_tokens > 0
-    assert resp.usage.completion_tokens > 0
+    assert resp.usage.prompt_tokens == 50
+    assert resp.usage.completion_tokens == 10
     mock_exec.assert_called_once()
 
 
@@ -110,15 +120,17 @@ async def test_codex_chat_success(
 async def test_codex_chat_passes_model(
     mock_exec: AsyncMock, mock_which: MagicMock
 ) -> None:
-    proc = _mock_process(stdout="ok")
+    proc = _mock_process(stdout=_JSONL_OK)
     mock_exec.return_value = proc
 
     p = CodexCliProvider()
-    await p.chat(_make_request("hi", model="gpt-5.3-codex"))
+    await p.chat(_make_request("hi", model="gpt-5.2-codex"))
 
-    # Verify model is passed as arg
+    # Verify model and --json/--full-auto are passed as args
     call_args = mock_exec.call_args[0]
-    assert "gpt-5.3-codex" in call_args
+    assert "gpt-5.2-codex" in call_args
+    assert "--json" in call_args
+    assert "--full-auto" in call_args
 
 
 # ---------------------------------------------------------------------------
@@ -179,7 +191,13 @@ async def test_codex_chat_timeout(
 async def test_codex_chat_with_tools_injects_tool_text(
     mock_exec: AsyncMock, mock_which: MagicMock
 ) -> None:
-    proc = _mock_process(stdout="I would use search")
+    jsonl_tools = "\n".join([
+        '{"type":"item.completed","item":{"id":"item_0",'
+        '"type":"agent_message","text":"I would use search"}}',
+        '{"type":"turn.completed",'
+        '"usage":{"input_tokens":10,"output_tokens":5}}',
+    ])
+    proc = _mock_process(stdout=jsonl_tools)
     mock_exec.return_value = proc
 
     p = CodexCliProvider()
@@ -199,17 +217,37 @@ async def test_codex_chat_with_tools_injects_tool_text(
 async def test_codex_chat_with_tools_empty_list(
     mock_exec: AsyncMock, mock_which: MagicMock
 ) -> None:
-    proc = _mock_process(stdout="plain response")
+    proc = _mock_process(stdout=_JSONL_OK)
     mock_exec.return_value = proc
 
     p = CodexCliProvider()
     resp = await p.chat_with_tools(_make_request(), [])
-    assert resp.content == "plain response"
+    assert resp.content == "This is the LLM response"
 
 
 # ---------------------------------------------------------------------------
 # _build_prompt
 # ---------------------------------------------------------------------------
+
+
+def test_parse_jsonl_response_extracts_agent_message() -> None:
+    jsonl = (
+        '{"type":"thread.started","thread_id":"t1"}\n'
+        '{"type":"item.completed","item":{"id":"i0","type":"reasoning","text":"thinking"}}\n'
+        '{"type":"item.completed","item":{"id":"i1","type":"agent_message","text":"Hello World"}}\n'
+        '{"type":"turn.completed","usage":{"input_tokens":100,"output_tokens":20}}'
+    )
+    content, usage = CodexCliProvider._parse_jsonl_response(jsonl)
+    assert content == "Hello World"
+    assert usage.prompt_tokens == 100
+    assert usage.completion_tokens == 20
+
+
+def test_parse_jsonl_response_fallback_on_plain_text() -> None:
+    content, usage = CodexCliProvider._parse_jsonl_response("just plain text")
+    assert content == "just plain text"
+    assert usage.prompt_tokens == 0
+    assert usage.completion_tokens == 0
 
 
 def test_build_prompt_combines_messages() -> None:

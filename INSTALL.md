@@ -252,7 +252,7 @@ subscriptions — no API keys or SDK charges required.
 
 | Provider | CLI tool | Default model | Env override |
 |----------|----------|---------------|--------------|
-| **Codex** | `codex` | `gpt-5.3-codex` | `YGN_CODEX_MODEL` |
+| **Codex** | `codex` | `gpt-5.2-codex` | `YGN_CODEX_MODEL` |
 | **Gemini** | `gemini` | `gemini-3.1-pro-preview` | `YGN_GEMINI_MODEL` |
 | **Stub** | — | — | — |
 
@@ -274,19 +274,29 @@ export YGN_LLM_PROVIDER=stub
 Optional model override:
 
 ```bash
-export YGN_CODEX_MODEL=gpt-5.3-codex
+export YGN_CODEX_MODEL=gpt-5.2-codex
 export YGN_GEMINI_MODEL=gemini-3.1-pro-preview
 export YGN_LLM_TIMEOUT_SEC=300   # subprocess timeout (default 300s)
 ```
 
 ### Running with a real provider
 
+**Bash / Git Bash / macOS / Linux:**
 ```bash
 # Async REPL with Codex
 YGN_LLM_PROVIDER=codex python -m ygn_brain.repl --async
 
 # Brain pipeline with Gemini
 YGN_LLM_PROVIDER=gemini python examples/02_brain_pipeline.py
+```
+
+**PowerShell (Windows):**
+```powershell
+# Async REPL with Codex
+$env:YGN_LLM_PROVIDER="codex"; python -m ygn_brain.repl --async
+
+# Brain pipeline with Gemini
+$env:YGN_LLM_PROVIDER="gemini"; python examples/02_brain_pipeline.py
 ```
 
 > **Note:** Gemini CLI requires prior authentication (`gemini auth login`).

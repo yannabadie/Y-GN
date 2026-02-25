@@ -114,10 +114,10 @@ def test_factory_fallback_nothing_available(
 
 
 def test_describe_codex() -> None:
-    p = CodexCliProvider(model="gpt-5.3-codex")
+    p = CodexCliProvider(model="gpt-5.2-codex")
     desc = ProviderFactory.describe(p)
     assert "CodexCliProvider" in desc
-    assert "gpt-5.3-codex" in desc
+    assert "gpt-5.2-codex" in desc
 
 
 def test_describe_gemini() -> None:

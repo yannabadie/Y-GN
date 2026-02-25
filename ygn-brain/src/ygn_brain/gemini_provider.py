@@ -6,6 +6,8 @@ import asyncio
 import json
 import os
 import shutil
+import subprocess
+import sys
 
 from .provider import (
     ChatRequest,
@@ -79,18 +81,12 @@ class GeminiCliProvider(LLMProvider):
             raise GeminiCliError(msg)
 
         # Run gemini CLI with JSON output
+        args = [
+            gemini_bin, "--prompt", prompt,
+            "--output-format", "json", "-m", model,
+        ]
         try:
-            proc = await asyncio.create_subprocess_exec(
-                "gemini",
-                "--prompt",
-                prompt,
-                "--output-format",
-                "json",
-                "-m",
-                model,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-            )
+            proc = await self._spawn(args)
             stdout_bytes, stderr_bytes = await asyncio.wait_for(
                 proc.communicate(), timeout=self._timeout
             )
@@ -152,6 +148,26 @@ class GeminiCliProvider(LLMProvider):
     # ------------------------------------------------------------------
     # Helpers
     # ------------------------------------------------------------------
+
+    @staticmethod
+    async def _spawn(
+        args: list[str],
+    ) -> asyncio.subprocess.Process:
+        """Spawn a subprocess, handling Windows .CMD/.BAT scripts."""
+        if sys.platform == "win32" and args[0].lower().endswith(
+            (".cmd", ".bat")
+        ):
+            cmd_line = subprocess.list2cmdline(args)
+            return await asyncio.create_subprocess_shell(
+                cmd_line,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+        return await asyncio.create_subprocess_exec(
+            *args,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
 
     @staticmethod
     def _build_prompt(request: ChatRequest) -> str:

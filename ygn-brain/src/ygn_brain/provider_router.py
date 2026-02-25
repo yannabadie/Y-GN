@@ -111,11 +111,11 @@ class ProviderRouter:
 
 # Maps (complexity, requires_tools) to a default model name.
 _COMPLEXITY_MODELS: dict[TaskComplexity, str] = {
-    TaskComplexity.TRIVIAL: "gpt-5.3-codex",
-    TaskComplexity.SIMPLE: "gpt-5.3-codex",
-    TaskComplexity.MODERATE: "gpt-5.3-codex",
-    TaskComplexity.COMPLEX: "gpt-5.3-codex",
-    TaskComplexity.EXPERT: "gpt-5.3-codex",
+    TaskComplexity.TRIVIAL: "gpt-5.2-codex",
+    TaskComplexity.SIMPLE: "gpt-5.2-codex",
+    TaskComplexity.MODERATE: "gpt-5.2-codex",
+    TaskComplexity.COMPLEX: "gpt-5.2-codex",
+    TaskComplexity.EXPERT: "gpt-5.2-codex",
 }
 
 
@@ -159,7 +159,7 @@ class ModelSelector:
     ) -> str:
         """Pick a model name given a provider and complexity."""
         if provider == "codex":
-            return "gpt-5.3-codex"
+            return "gpt-5.2-codex"
         if provider == "openai":
             if complexity in {TaskComplexity.EXPERT, TaskComplexity.COMPLEX}:
                 return "gpt-4o"
@@ -169,4 +169,4 @@ class ModelSelector:
         if provider == "ollama":
             return "llama3"
         # Default: use the complexity map (codex-based)
-        return _COMPLEXITY_MODELS.get(complexity, "gpt-5.3-codex")
+        return _COMPLEXITY_MODELS.get(complexity, "gpt-5.2-codex")

@@ -3,6 +3,29 @@
 All notable changes to Y-GN (Yggdrasil-Grid Nexus) are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.2.1] - 2026-02-24
+
+Windows E2E validation — real inference verified with Codex and Gemini CLIs.
+
+### Fixed
+
+- **Windows .CMD subprocess support**: `asyncio.create_subprocess_exec`
+  cannot execute npm-installed `.CMD` batch scripts on Windows. Both
+  `CodexCliProvider` and `GeminiCliProvider` now detect `.CMD`/`.BAT`
+  executables and use `create_subprocess_shell` with `list2cmdline` quoting.
+- **Codex JSONL output parsing**: `codex exec --json` produces structured
+  JSONL events. New `_parse_jsonl_response()` extracts `agent_message`
+  text and `turn.completed` token usage instead of capturing raw noisy
+  stdout.
+- **Codex `--full-auto` flag**: prevents the agent from hanging on
+  interactive approval prompts when run as a subprocess.
+- **Codex default model**: corrected from `gpt-5.3-codex` to
+  `gpt-5.2-codex` (matching actual Codex CLI default).
+
+### Changed
+
+- 2 new JSONL parser unit tests (total 299 Python tests).
+
 ## [0.2.0] - 2026-02-24
 
 CLI LLM providers — real inference via Codex and Gemini CLIs, no API cost.
@@ -11,7 +34,7 @@ CLI LLM providers — real inference via Codex and Gemini CLIs, no API cost.
 
 - **CodexCliProvider**: LLM inference via `codex exec` subprocess. Uses
   existing Codex CLI authentication (subscription-based). Default model
-  `gpt-5.3-codex`, configurable via `YGN_CODEX_MODEL`.
+  `gpt-5.2-codex`, configurable via `YGN_CODEX_MODEL`.
 - **GeminiCliProvider**: LLM inference via `gemini` CLI subprocess with
   JSON output parsing. Default model `gemini-3.1-pro-preview`, configurable
   via `YGN_GEMINI_MODEL`.
@@ -28,7 +51,7 @@ CLI LLM providers — real inference via Codex and Gemini CLIs, no API cost.
 - **ProviderRouter** prefix map: `gpt-*`, `o1-*`, `o3-*`, `o4-*` now route
   to `codex` provider (was: `openai`).
 - **ModelSelector** default models: all complexity levels default to
-  `gpt-5.3-codex` (was: Claude models). Gemini preferred provider returns
+  `gpt-5.2-codex` (was: Claude models). Gemini preferred provider returns
   `gemini-3.1-pro-preview`.
 - **REPL** `async_main()` uses `ProviderFactory` and displays the resolved
   provider name and model clearly.
