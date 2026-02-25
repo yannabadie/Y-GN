@@ -1,7 +1,6 @@
 # Y-GN (Yggdrasil-Grid Nexus)
 
-A distributed multi-agent runtime that separates reasoning from execution,
-enabling secure and observable AI agent deployments from edge to cloud.
+**v0.2.1** — A distributed multi-agent runtime that separates reasoning from execution.
 
 ## Architecture
 
@@ -17,7 +16,7 @@ enabling secure and observable AI agent deployments from edge to cloud.
           |   (Python)      | <-----------> |     (Rust)         |
           |                 |   JSON-RPC    |                    |
           | - Orchestrator  |   over stdio  | - Tool registry    |
-          | - HiveMind 7ph  |               | - Sandbox (WASM)   |
+          | - HiveMind 7ph  |               | - Process sandbox  |
           | - Swarm engine  |               | - Channels         |
           | - Evidence Pack |               | - Memory (SQLite)  |
           | - Guards        |               | - Gateway (Axum)   |
@@ -29,16 +28,35 @@ enabling secure and observable AI agent deployments from edge to cloud.
 **Core** (Rust) handles tool execution, sandboxing, channels, and persistence.
 They communicate over the **Model Context Protocol (MCP)**.
 
-## Key Features
+## Works Today (E2E verified 2026-02-25)
 
-- **7-phase HiveMind pipeline** -- diagnosis, analysis, planning, execution, validation, synthesis, completion
-- **Hybrid swarm engine** -- parallel, sequential, red/blue, ping-pong, lead-support, and specialist modes
-- **Evidence Packs** -- auditable trace of every decision, tool call, and output
-- **MCP integration** -- Brain discovers and calls Core tools via JSON-RPC 2.0
-- **WASM/WASI sandbox** -- execute untrusted tools with configurable security policies
-- **Tiered memory** -- hot/warm/cold storage with temporal knowledge graph
-- **Distributed agents** -- node registry, teaming, and IoA-style collaboration
-- **OpenTelemetry** -- traces and metrics across both Brain and Core
+- **MCP Brain-Core integration** -- JSON-RPC 2.0 over stdio, echo tool discovery + invocation
+- **Codex + Gemini CLI providers** -- real LLM inference via subprocess, no API cost
+- **HiveMind 7-phase pipeline** -- diagnosis, analysis, planning, execution, validation, synthesis, completion (sync: deterministic; async: 4/7 phases LLM-backed)
+- **Guard pipeline** -- regex-based prompt injection detection (3 attack categories: instruction override, role manipulation, delimiter injection)
+- **Evidence Packs** -- auditable JSONL trace (session-stamped, per-entry timestamp/phase/kind/data)
+- **Swarm engine** -- Parallel, Sequential, Specialist modes with async LLM execution
+- **3-tier memory** -- Hot (TTL cache) / Warm (tag-indexed) / Cold (relation-linked) with word-overlap search
+- **Process sandbox** -- 4 profiles (NoNet, Net, ReadOnlyFs, ScratchFs), path traversal prevention
+- **Policy engine** -- risk assessment + action decision (Allow/Deny/RequireApproval) with audit trail
+- **HTTP gateway** -- Axum with `/health`, `/providers`, `/health/providers`
+- **SQLite FTS5 memory** -- BM25 ranking, WAL mode, trigger-synced index
+- **CLI tools** -- `status`, `gateway`, `config schema`, `tools list`, `providers list`, `mcp`, `registry list`, `diagnose`
+
+## Roadmap / Known Stubs
+
+These features have types/interfaces but are not fully implemented:
+
+| Feature | Current State | What's Missing |
+|---------|--------------|----------------|
+| WASM/WASI sandbox | Process-level policy checks only | No wasmtime runtime, no actual WASM module execution |
+| Landlock OS sandbox | Types + `apply_linux()` stub | Explicit stub comment, not enforced |
+| Distributed registry | In-memory HashMap | Lost on restart, no persistent backing store |
+| Temporal Knowledge Graph | `ColdEntry.relations` declared | Never populated, no graph traversal |
+| Swarm Red/Blue, PingPong, LeadSupport | Enum values exist | No executor implementations, fall back to sequential |
+| A2A protocol | Not implemented | Referenced in roadmap only |
+| Brain as MCP server | Brain is MCP client only | Cannot serve tools to external callers |
+| Vector embeddings | Not implemented | Memory uses word-overlap matching |
 
 ## Quick Install
 
@@ -67,11 +85,19 @@ see **[INSTALL.md](INSTALL.md)**.
 ygn-core tools list
 ygn-core config schema
 
-# Run a Brain pipeline
+# Run a Brain pipeline (sync — deterministic, no LLM needed)
 python -c "
 from ygn_brain import Orchestrator
-result = Orchestrator().run('Summarize WASM sandbox security')
+result = Orchestrator().run('What is 2+2?')
 print(result['result'])
+"
+
+# Run with real LLM (requires Codex CLI installed)
+YGN_LLM_PROVIDER=codex python -c "
+import asyncio
+from ygn_brain import Orchestrator
+result = asyncio.run(Orchestrator().run_async('What is the capital of France?'))
+print(result['result'][:200])
 "
 
 # Run all quality gates
@@ -99,40 +125,13 @@ Y-GN/
   LICENSE            Apache-2.0
 ```
 
-## Milestones
+## Test Counts (2026-02-25)
 
-| ID | Name | Status |
-|----|------|--------|
-| M0 | Bootstrap -- monorepo, CI, agent team | Complete |
-| M1 | Core usable -- config, gateway, CLI | Complete |
-| M2 | Brain usable -- HiveMind pipeline, Evidence Pack | Complete |
-| M3 | Brain-Core integration -- MCP tool calls | Complete |
-| M4 | Secure tool execution -- WASM sandbox, policies | Complete |
-| M5 | Memory v1 -- tiered storage, temporal KG | Complete |
-| M6 | Distributed swarm -- registry, teaming, IoA | Complete |
-| M7 | Self-healing -- auto-diagnosis, scaffold evolution | Complete |
-| M8 | Release ready -- installer, docs, examples | Complete |
-
-## Release v0.1.0
-
-First MVP release (2026-02-24). Both ygn-core and ygn-brain are independently
-usable and integrate over MCP. See [CHANGELOG.md](CHANGELOG.md) for full details.
-
-**Quick verification:**
-
-```bash
-# 1. Build & install (see INSTALL.md for details)
-cd ygn-core && cargo build --release && cd ..
-cd ygn-brain && pip install -e .[dev] && cd ..
-
-# 2. Run all quality gates
-make test
-
-# 3. E2E demo: Brain calls Core tool via MCP
-python examples/03_mcp_integration.py
-```
-
-**Test counts:** 336 Rust + 245 Python = 581 tests.
+| Component | Tests |
+|-----------|-------|
+| ygn-core (Rust) | 336 |
+| ygn-brain (Python) | 299+ |
+| **Total** | **635+** |
 
 ## License
 

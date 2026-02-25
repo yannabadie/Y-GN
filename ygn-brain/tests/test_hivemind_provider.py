@@ -130,3 +130,81 @@ def test_orchestrator_run_sync_with_provider_param_still_works():
     result = orch.run("hello world")
     # sync run() uses stub pipeline, not provider
     assert "hello world" in result["result"]
+
+
+# ---------------------------------------------------------------------------
+# Fix 2.1: model field should use provider name, not "default"
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_model_not_default():
+    """Fix 2.1: model field should use provider name, not 'default'."""
+    captured_models: list[str] = []
+
+    class _CapturingProvider(StubLLMProvider):
+        async def chat(self, request):
+            captured_models.append(request.model)
+            return await super().chat(request)
+
+    pipeline = HiveMindPipeline()
+    evidence = EvidencePack(session_id="model_test")
+    provider = _CapturingProvider()
+    await pipeline.run_with_provider("test model", evidence, provider)
+    assert len(captured_models) == 4  # analysis, planning, execution, synthesis
+    for m in captured_models:
+        assert m != "default", f"model should not be 'default', got: {m}"
+        assert m == "stub"  # StubLLMProvider.name() returns "stub"
+
+
+# ---------------------------------------------------------------------------
+# Fix 2.4: phase timeout — pipeline completes even when LLM phases time out
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_phase_timeout_completes_pipeline():
+    """Fix 2.4: pipeline completes even when LLM phases time out."""
+    import asyncio
+
+    class _SlowProvider(StubLLMProvider):
+        async def chat(self, request):
+            await asyncio.sleep(60)  # Very slow
+            return await super().chat(request)
+
+    pipeline = HiveMindPipeline()
+    evidence = EvidencePack(session_id="timeout_test")
+    provider = _SlowProvider()
+    results = await pipeline.run_with_provider(
+        "test timeout", evidence, provider, phase_timeout=0.01
+    )
+    assert len(results) == 7
+    phase_names = [r.phase for r in results]
+    assert phase_names == [
+        "diagnosis", "analysis", "planning", "execution",
+        "validation", "synthesis", "complete",
+    ]
+    # Timed-out phases should have fallback content
+    analysis = [r for r in results if r.phase == "analysis"][0]
+    assert "timed out" in analysis.data["strategy"]
+
+
+@pytest.mark.asyncio
+async def test_phase_timeout_records_evidence():
+    """Fix 2.4: timeout errors are recorded in evidence."""
+    import asyncio
+
+    class _SlowProvider(StubLLMProvider):
+        async def chat(self, request):
+            await asyncio.sleep(60)
+            return await super().chat(request)
+
+    pipeline = HiveMindPipeline()
+    evidence = EvidencePack(session_id="timeout_ev")
+    provider = _SlowProvider()
+    await pipeline.run_with_provider(
+        "test", evidence, provider, phase_timeout=0.01
+    )
+    error_entries = [e for e in evidence.entries if e.kind == "error"]
+    assert len(error_entries) >= 1
+    assert error_entries[0].data["error"] == "timeout"

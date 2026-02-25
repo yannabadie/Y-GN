@@ -3,12 +3,25 @@
 All notable changes to Y-GN (Yggdrasil-Grid Nexus) are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/).
 
-## [0.2.1] - 2026-02-24
+## [0.2.1] - 2026-02-25
 
-Windows E2E validation — real inference verified with Codex and Gemini CLIs.
+Post-audit overhaul — fact-first documentation, 4 bug fixes, real E2E verification.
+Version alignment across all manifests (was 0.1.0, now 0.2.1).
 
 ### Fixed
 
+- **HiveMind model="default" hardcode**: `run_with_provider()` sent literal
+  `"default"` as model name to LLM providers. Now uses
+  `getattr(provider, '_model', None) or provider.name()`. Same fix applied
+  to SwarmEngine at 4 locations.
+- **ModelSelector stale fallback**: default model fallback referenced
+  `claude-3-5-sonnet-20241022` (stale). Changed to `gpt-5.2-codex`.
+- **EvidenceEntry kind unconstrained**: `kind: str` accepted any string.
+  Added `EvidenceKind(StrEnum)` with 6 valid values: input, decision,
+  tool_call, source, output, error. Invalid kinds now raise ValidationError.
+- **HiveMind phase timeout**: async pipeline had no per-phase timeout,
+  causing Gemini CLI to hang on 3rd LLM call. Added `phase_timeout` param
+  with `asyncio.wait_for()` + graceful fallback on timeout.
 - **Windows .CMD subprocess support**: `asyncio.create_subprocess_exec`
   cannot execute npm-installed `.CMD` batch scripts on Windows. Both
   `CodexCliProvider` and `GeminiCliProvider` now detect `.CMD`/`.BAT`
@@ -21,10 +34,26 @@ Windows E2E validation — real inference verified with Codex and Gemini CLIs.
   interactive approval prompts when run as a subprocess.
 - **Codex default model**: corrected from `gpt-5.3-codex` to
   `gpt-5.2-codex` (matching actual Codex CLI default).
+- **Version alignment**: pyproject.toml, Cargo.toml, __init__.py all now
+  report 0.2.1 (were stuck at 0.1.0).
+
+### Added
+
+- `EvidenceKind` StrEnum exported from `ygn_brain`.
+- `phase_timeout` parameter on `HiveMindPipeline.run_with_provider()`.
+- `YGN_PHASE_TIMEOUT_SEC` env var for default phase timeout.
+- 14 new tests: model capture, phase timeout, evidence kind constraint,
+  JSONL 7-phase validation, guard known-gap documentation tests.
+- `ygn-core/README.md` — crate-level documentation.
 
 ### Changed
 
-- 2 new JSONL parser unit tests (total 299 Python tests).
+- **README.md**: fact-first rewrite with "Works Today (E2E verified)" vs
+  "Roadmap / Known Stubs" sections.
+- **ROADMAP.md**: added Post-0.2 Priorities (P1-P7) section.
+- **CLAUDE.md**: corrected test counts, documented stubs.
+- **memory-bank**: updated activeContext, progress, decisionLog.
+- Total: 336 Rust + 313 Python = 649 tests.
 
 ## [0.2.0] - 2026-02-24
 

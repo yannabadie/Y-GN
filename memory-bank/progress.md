@@ -99,7 +99,33 @@
 - [x] Updated README.md with release section
 - [x] E2E demo verified: McpClient → ygn-core mcp → echo tool → response
 
+### v0.2.0 — CLI LLM Providers (2026-02-24)
+- [x] CodexCliProvider: subprocess LLM via codex exec
+- [x] GeminiCliProvider: subprocess LLM via gemini CLI
+- [x] ProviderFactory: deterministic provider selection from YGN_LLM_PROVIDER env
+- [x] 52 new tests for providers and factory
+- [x] Orchestrator uses ProviderFactory when no provider given
+
+### v0.2.1 — Windows E2E + Bug Fixes (2026-02-25)
+- [x] Windows .CMD subprocess support for CLI providers
+- [x] Codex JSONL output parsing fix
+- [x] Version alignment: 0.1.0 → 0.2.1 across all manifests
+- [x] Fix: model="default" hardcode in HiveMind + Swarm (5 locations)
+- [x] Fix: ModelSelector stale Claude fallback → gpt-5.2-codex
+- [x] Fix: EvidenceKind StrEnum constrains valid kinds
+- [x] Fix: HiveMind phase_timeout with asyncio.wait_for + graceful fallback
+- [x] README fact-first rewrite with "Works Today" vs "Known Stubs"
+- [x] New ygn-core/README.md
+- [x] 14 new tests: model capture, timeout, evidence kind, guard gaps
+- [x] Known gaps documented: guard regex bypass, WASM stub, Landlock stub
+
+### Known Bugs (all fixed in v0.2.1)
+- [FIXED] model="default" sent to LLM providers instead of actual model name
+- [FIXED] ModelSelector fallback used stale "claude-3-5-sonnet-20241022"
+- [FIXED] EvidenceEntry.kind accepted arbitrary strings
+- [FIXED] No timeout on HiveMind LLM phases (Gemini hangs on 3rd call)
+
 ## Summary
 
-All milestones M0–M8 + Post-MVP complete. **v0.1.0 MVP released 2026-02-24.**
-Total: **336 Rust tests + 245 Python tests = 581 tests**, all green.
+All milestones M0–M8 + Post-MVP complete. **v0.2.1 released 2026-02-25.**
+Total: **336 Rust tests + 313+ Python tests = 649+ tests**, all green.

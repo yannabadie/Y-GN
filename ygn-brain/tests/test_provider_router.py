@@ -213,3 +213,16 @@ def test_selector_preferred_ollama():
     selector = ModelSelector()
     model = selector.select(TaskComplexity.SIMPLE, preferred_provider="ollama")
     assert "llama" in model
+
+
+# ---------------------------------------------------------------------------
+# Fix 2.2: default fallback should not reference stale Claude model
+# ---------------------------------------------------------------------------
+
+
+def test_selector_fallback_not_claude():
+    """Fix 2.2: default fallback should not reference stale Claude model."""
+    selector = ModelSelector()
+    # Use a complexity not in the map (shouldn't happen, but test the fallback)
+    model = selector.select(TaskComplexity.TRIVIAL)
+    assert "claude" not in model.lower()

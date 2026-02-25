@@ -593,3 +593,26 @@ epics:
 - SandCell: https://arxiv.org/abs/2509.24032
 - EvoConfig: https://arxiv.org/abs/2601.16489
 - Live-SWE-agent: https://arxiv.org/abs/2511.13646
+
+---
+
+## 7) Post-0.2 Priorities (added 2026-02-25)
+
+Based on expert review, E2E testing audit, and VISION-ANALYSIS convergence.
+
+| Priority | Item | Rationale |
+|----------|------|-----------|
+| P1 | Bug fixes (model hardcode, stale fallback, evidence kind, phase timeout) | Fixed in v0.2.1. All 4 bugs caught by expert audit + real E2E testing. |
+| P2 | Brain as MCP server | Expert 2 + VISION-ANALYSIS convergence: Brain should serve tools, not just consume them. Enables external orchestrators to call Brain capabilities. |
+| P3 | Guard v2 — regex → LlamaFirewall-style classifier | Current regex guard has known gaps (unicode homoglyphs, base64 bypass, synonym variations). Reference: arXiv:2505.03574. |
+| P4 | Evidence crypto-signing | EU AI Act (Aug 2026) requires tamper-proof audit trails. Sign Evidence Packs with ed25519 or similar. |
+| P5 | A2A protocol | IoA vision requires agent-to-agent communication. Google A2A or custom protocol. |
+| P6 | Real WASM sandbox | Evaluate Wassette (Microsoft, same Brain↔Core + WASM architecture) before building custom wasmtime integration. |
+| P7 | MCP 2025-11-25 spec upgrade | Tasks, Streamable HTTP transport, OAuth 2.1 — current implementation uses 2024 spec. |
+
+### Research References (Post-0.2)
+
+- LlamaFirewall (guard v2): https://arxiv.org/abs/2505.03574
+- Wassette (WASM eval): Microsoft Research, 2025
+- MCP spec 2025-11-25: https://spec.modelcontextprotocol.io/2025-11-25/
+- EU AI Act timeline: August 2026 enforcement date

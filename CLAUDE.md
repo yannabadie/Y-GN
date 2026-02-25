@@ -4,6 +4,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
+**Current version: v0.2.1**
+
 Y-GN (Yggdrasil-Grid Nexus) is a distributed multi-agent runtime that separates **reasoning** from **execution**:
 
 - **ygn-brain/** (Python) — cognitive control-plane: planning, multi-agent orchestration (HiveMind 7-phase pipeline, HybridSwarmEngine), governance, Evidence Packs, scoring. Extracted from NEXUS NX-CG.
@@ -61,9 +63,9 @@ ygn-core diagnose              # Run diagnostics on stdin
 - `GET /health/providers` — Health status of all providers (circuit breaker state)
 
 ### Test counts
-- Rust (ygn-core): 276+ tests
-- Python (ygn-brain): 195+ tests
-- Total: 471+ tests
+- Rust (ygn-core): 336 tests
+- Python (ygn-brain): 299 tests
+- Total: 635 tests
 
 ## Architecture
 
@@ -118,7 +120,7 @@ Trait-based subsystems: `providers`, `channels`, `tools`, `memory`, `security`, 
 - Multi-provider LLM: ClaudeProvider, OpenAIProvider, GeminiProvider, OllamaProvider + ProviderRegistry
 - Credential vault (zero-on-drop), rate limiter (token-bucket), provider health (circuit breaker)
 - Channels (Telegram, Discord, Matrix) + tunnels (cloudflared, tailscale, ngrok)
-- WASM/WASI sandbox with profiles: `no-net`, `net`, `read-only-fs`, `scratch-fs`
+- WASM/WASI sandbox with profiles: `no-net`, `net`, `read-only-fs`, `scratch-fs` — **note:** process-level policy checks only; no wasmtime runtime is embedded
 - Memory engine (SQLite) + caches
 - Skills system with topological sort execution
 - Config with JSON schema export; fields `ygn.node_role` (edge/core/brain-proxy) and `trust_tier`
@@ -126,10 +128,10 @@ Trait-based subsystems: `providers`, `channels`, `tools`, `memory`, `security`, 
 ### Memory subsystem (3-tier)
 - **Hot** — semantic/TTL cache for recent interactions
 - **Warm** — temporal index + hierarchical tags (SwiftMem-inspired)
-- **Cold** — Temporal Knowledge Graph (Zep/Graphiti-inspired) + doc store + embeddings; HippoRAG mode (KG + Personalized PageRank) for multi-hop reasoning
+- **Cold** — Temporal Knowledge Graph (Zep/Graphiti-inspired) + doc store; HippoRAG mode (KG + Personalized PageRank) for multi-hop reasoning. **Note:** `relations` table is declared but never populated; search uses word-overlap scoring, not vector embeddings
 
 ### Security model ("multi-wall")
-WASM/WASI sandbox → OS sandbox (landlock/bwrap) → action allowlists/RBAC → runtime behavior analysis (HeteroGAT-Rank) → approval gates for HIGH-RISK actions.
+WASM/WASI sandbox (process-level policy checks) → OS sandbox (Landlock types exist but `apply_linux()` is a stub — not enforced) → action allowlists/RBAC → runtime behavior analysis (HeteroGAT-Rank) → approval gates for HIGH-RISK actions.
 
 ## Agent Team Roles
 
@@ -164,7 +166,7 @@ Always read these files at session start. Update them when significant changes o
 
 M0 (Bootstrap) → M1 (Core usable) → M2 (Brain usable) → M3 (Brain↔Core integration) → M4 (Secure sandbox) → M5 (Memory v1) → M6 (IoA distributed) → M7 (Self-healing) → M8 (Release) → Post-MVP (Multi-Provider LLM)
 
-All milestones complete. The ROADMAP.md YAML block is the authoritative source for epic/task details and acceptance criteria.
+All milestones complete (current release: v0.2.1). The ROADMAP.md YAML block is the authoritative source for epic/task details and acceptance criteria.
 
 ## Key Constraints
 

@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import asyncio
+import logging
+import os
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
@@ -10,6 +13,8 @@ from .fsm import FSMState, Phase
 
 if TYPE_CHECKING:
     from .provider import ChatResponse, LLMProvider
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -130,17 +135,53 @@ class HiveMindPipeline:
         user_input: str,
         evidence: EvidencePack,
         provider: LLMProvider,
+        phase_timeout: float | None = None,
     ) -> list[PhaseResult]:
         """Run all 7 phases using a real LLM provider for cognitive steps.
 
         This is the async counterpart of :meth:`run`.  Non-LLM phases
         (diagnosis, validation, complete) keep their deterministic logic;
         analysis, planning, execution, and synthesis delegate to *provider*.
+
+        Args:
+            phase_timeout: Per-phase timeout in seconds for LLM calls.
+                Falls back to ``YGN_PHASE_TIMEOUT_SEC`` env var if *None*.
+                If both are unset, no timeout is applied.
         """
 
         fsm = FSMState()
         results: list[PhaseResult] = []
-        model = "default"
+        model = getattr(provider, "_model", None) or provider.name()
+
+        # Resolve phase timeout: explicit param > env var > None (no timeout)
+        if phase_timeout is None:
+            env_timeout = os.environ.get("YGN_PHASE_TIMEOUT_SEC", "").strip()
+            if env_timeout:
+                phase_timeout = float(env_timeout)
+
+        async def _guarded(coro: Any, phase_name: str) -> ChatResponse:
+            """Wrap an LLM coroutine with optional timeout + fallback."""
+            from .provider import ChatResponse as ChatResp
+            from .provider import TokenUsage
+
+            try:
+                if phase_timeout is not None:
+                    return await asyncio.wait_for(coro, timeout=phase_timeout)
+                return await coro
+            except TimeoutError:
+                logger.error(
+                    "Phase '%s' timed out after %.1fs", phase_name, phase_timeout
+                )
+                evidence.add(
+                    phase_name,
+                    "error",
+                    {"error": "timeout", "timeout_sec": phase_timeout},
+                )
+                return ChatResp(
+                    content=f"[Phase {phase_name} timed out after {phase_timeout}s]",
+                    tool_calls=[],
+                    usage=TokenUsage(prompt_tokens=0, completion_tokens=0),
+                )
 
         # Phase 1 — Diagnosis (deterministic — no LLM needed)
         fsm = fsm.transition(Phase.DIAGNOSIS)
@@ -154,7 +195,9 @@ class HiveMindPipeline:
 
         # Phase 2 — Analysis: ask the LLM for a strategy
         fsm = fsm.transition(Phase.ANALYSIS)
-        strategy_resp = await self._llm_determine_strategy(provider, model, user_input)
+        strategy_resp = await _guarded(
+            self._llm_determine_strategy(provider, model, user_input), "analysis"
+        )
         strategy = strategy_resp.content
         analysis_data: dict[str, Any] = {"strategy": strategy}
         evidence.add("analysis", "decision", analysis_data)
@@ -162,7 +205,9 @@ class HiveMindPipeline:
 
         # Phase 3 — Planning: ask the LLM for an execution plan
         fsm = fsm.transition(Phase.PLANNING)
-        plan_resp = await self._llm_create_plan(provider, model, user_input, strategy)
+        plan_resp = await _guarded(
+            self._llm_create_plan(provider, model, user_input, strategy), "planning"
+        )
         plan_text = plan_resp.content
         plan: dict[str, Any] = {"strategy": strategy, "llm_plan": plan_text}
         plan_data: dict[str, Any] = {"plan": plan}
@@ -171,7 +216,9 @@ class HiveMindPipeline:
 
         # Phase 4 — Execution: ask the LLM to execute
         fsm = fsm.transition(Phase.EXECUTION)
-        exec_resp = await self._llm_execute(provider, model, user_input, plan_text)
+        exec_resp = await _guarded(
+            self._llm_execute(provider, model, user_input, plan_text), "execution"
+        )
         exec_output = exec_resp.content
         exec_data: dict[str, Any] = {"output": exec_output}
         evidence.add("execution", "output", exec_data)
@@ -189,7 +236,9 @@ class HiveMindPipeline:
 
         # Phase 6 — Synthesis: ask the LLM for a final answer
         fsm = fsm.transition(Phase.SYNTHESIS)
-        synth_resp = await self._llm_synthesize(provider, model, user_input, exec_output)
+        synth_resp = await _guarded(
+            self._llm_synthesize(provider, model, user_input, exec_output), "synthesis"
+        )
         final = synth_resp.content
         synth_data: dict[str, Any] = {"final": final}
         evidence.add("synthesis", "output", synth_data)

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-__version__ = "0.1.0"
+__version__ = "0.2.1"
 
 from .codex_provider import CodexCliError, CodexCliProvider
 from .context import ContextBuilder, ExecutionContext
@@ -10,7 +10,7 @@ from .context_compression import CompressedContext, CompressionStrategy, Context
 from .conversation import ConversationMemory, ConversationTurn
 from .dylan_metrics import AgentMetrics, DyLANTracker
 from .event_sourcing import EventStore, FSMEvent, InMemoryEventStore
-from .evidence import EvidenceEntry, EvidencePack
+from .evidence import EvidenceEntry, EvidenceKind, EvidencePack
 from .evolution import (
     EvolutionEngine,
     EvolutionProposal,
@@ -114,6 +114,7 @@ __all__ = [
     "EvolutionScope",
     "ExecutionContext",
     "EvidenceEntry",
+    "EvidenceKind",
     "EvidencePack",
     "FSMEvent",
     "FSMState",

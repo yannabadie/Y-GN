@@ -3,16 +3,28 @@
 from __future__ import annotations
 
 import time
+from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
 from pydantic import BaseModel, Field
 
 
+class EvidenceKind(StrEnum):
+    """Constrained set of valid evidence entry kinds."""
+
+    INPUT = "input"
+    DECISION = "decision"
+    TOOL_CALL = "tool_call"
+    SOURCE = "source"
+    OUTPUT = "output"
+    ERROR = "error"
+
+
 class EvidenceEntry(BaseModel):
     timestamp: float = Field(default_factory=time.time)
     phase: str
-    kind: str  # "input", "decision", "tool_call", "source", "output", "error"
+    kind: EvidenceKind
     data: dict[str, Any] = {}
 
 
@@ -22,7 +34,9 @@ class EvidencePack(BaseModel):
     created_at: float = Field(default_factory=time.time)
 
     def add(self, phase: str, kind: str, data: dict[str, Any] | None = None) -> None:
-        self.entries.append(EvidenceEntry(phase=phase, kind=kind, data=data or {}))
+        self.entries.append(
+            EvidenceEntry(phase=phase, kind=EvidenceKind(kind), data=data or {})
+        )
 
     def to_jsonl(self) -> str:
         lines = [entry.model_dump_json() for entry in self.entries]

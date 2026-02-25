@@ -14,3 +14,9 @@
 | 2026-02-19 | Memory architecture: Merged NEXUS hybrid backends + ZeroClaw SQLite into 3-tier (hot/warm/cold) Python + FTS5 Rust | Best of both: NEXUS decay/tag logic + ZeroClaw FTS5 performance |
 | 2026-02-19 | Orchestration strategy: Kept NEXUS HiveMind 7-phase but decomposed OrchestratorV7 into Mediator | Audit NX-CG recommended decomposition; Mediator pattern is testable |
 | 2026-02-19 | Tool execution contract: Merged ZeroClaw Tool trait + NEXUS MCP client/server into unified MCP pipeline | MCP is the ecosystem standard; ZeroClaw traits provide the execution layer, NEXUS provides the client |
+| 2026-02-25 | Fix model="default" hardcode — use provider.name() | Expert audit: "default" was sent to real LLM providers who don't understand it. Use `getattr(provider, '_model', None) or provider.name()` for correct model resolution. |
+| 2026-02-25 | Fix ModelSelector fallback to gpt-5.2-codex | Stale fallback "claude-3-5-sonnet-20241022" referenced a model no longer default. All complexity levels already map to codex. |
+| 2026-02-25 | Brain as MCP server deferred (Brain is client only) | Expert recommendation + VISION-ANALYSIS convergence: Brain should also serve tools to external callers. Deferred to post-0.2 as P2 priority. |
+| 2026-02-25 | Evidence crypto-signing deferred (EU AI Act Aug 2026) | Evidence Packs need tamper-proof signatures for regulatory compliance. Timeline: before Aug 2026 EU AI Act deadline. |
+| 2026-02-25 | Guard v2: regex → classifier (arXiv:2505.03574) | Current regex guard has known gaps (unicode homoglyphs, base64 bypass). LlamaFirewall-style classifier recommended for production. |
+| 2026-02-25 | Evaluate Wassette before custom WASM runtime | Microsoft Wassette uses same Brain↔Core + WASM architecture. Evaluate before building custom wasmtime integration. |

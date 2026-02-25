@@ -250,7 +250,7 @@ class SwarmEngine:
         """Fan-out the task to multiple agents concurrently."""
         from .provider import ChatMessage, ChatRequest, ChatRole
 
-        model = "default"
+        model = getattr(provider, "_model", None) or provider.name()
         prompts = [
             f"As a {domain} specialist, address the following task:\n{task}"
             for domain in analysis.domains
@@ -289,7 +289,7 @@ class SwarmEngine:
         """Chain LLM calls — each step's output feeds into the next."""
         from .provider import ChatMessage, ChatRequest, ChatRole
 
-        model = "default"
+        model = getattr(provider, "_model", None) or provider.name()
         steps = ["understand", "plan", "execute"]
         current = task
         for step in steps:
@@ -325,7 +325,7 @@ class SwarmEngine:
         """Use a focused domain prompt for expert-level tasks."""
         from .provider import ChatMessage, ChatRequest, ChatRole
 
-        model = "default"
+        model = getattr(provider, "_model", None) or provider.name()
         domain_list = ", ".join(analysis.domains)
         resp = await provider.chat(
             ChatRequest(
@@ -361,7 +361,7 @@ class SwarmEngine:
         """Fallback: single LLM call for any unmapped mode."""
         from .provider import ChatMessage, ChatRequest, ChatRole
 
-        model = "default"
+        model = getattr(provider, "_model", None) or provider.name()
         resp = await provider.chat(
             ChatRequest(
                 model=model,

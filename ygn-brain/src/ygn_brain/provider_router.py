@@ -146,7 +146,7 @@ class ModelSelector:
 
         # Default: use the complexity map
         return _COMPLEXITY_MODELS.get(
-            task_complexity, "claude-3-5-sonnet-20241022"
+            task_complexity, "gpt-5.2-codex"
         )
 
     # ------------------------------------------------------------------
