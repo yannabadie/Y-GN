@@ -64,8 +64,8 @@ ygn-core diagnose              # Run diagnostics on stdin
 
 ### Test counts
 - Rust (ygn-core): 336 tests
-- Python (ygn-brain): 299 tests
-- Total: 635 tests
+- Python (ygn-brain): 313 tests
+- Total: 649 tests
 
 ## Architecture
 
