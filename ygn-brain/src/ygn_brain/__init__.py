@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-__version__ = "0.2.1"
+__version__ = "0.3.0"
 
 from .codex_provider import CodexCliError, CodexCliProvider
 from .context import ContextBuilder, ExecutionContext
@@ -22,7 +22,16 @@ from .evolution import (
 )
 from .fsm import FSMState, Phase
 from .gemini_provider import GeminiCliError, GeminiCliProvider
-from .guard import GuardPipeline, GuardResult, InputGuard, ThreatLevel
+from .guard import (
+    GuardBackend,
+    GuardPipeline,
+    GuardResult,
+    InputGuard,
+    RegexGuard,
+    ThreatLevel,
+    ToolInvocationGuard,
+)
+from .guard_backends import ClassifierGuard, StubClassifierGuard
 from .hivemind import HiveMindPipeline, PhaseResult
 from .mcp_client import McpClient, McpError
 from .memory import InMemoryBackend, MemoryCategory, MemoryEntry, MemoryService
@@ -45,6 +54,7 @@ from .provider_router import ModelSelector, ProviderRouter
 from .success_memory import SuccessMemory, SuccessRecord
 from .swarm import (
     ParallelExecutor,
+    RedBlueExecutor,
     SequentialExecutor,
     SpecialistExecutor,
     SwarmEngine,
@@ -124,6 +134,7 @@ __all__ = [
     "GateCheckResult",
     "GeminiCliError",
     "GeminiCliProvider",
+    "GuardBackend",
     "GuardPipeline",
     "GuardResult",
     "HiveMindPipeline",
@@ -131,6 +142,10 @@ __all__ = [
     "InMemoryBackend",
     "InMemoryEventStore",
     "InputGuard",
+    "ClassifierGuard",
+    "StubClassifierGuard",
+    "RegexGuard",
+    "ToolInvocationGuard",
     "LLMProvider",
     "McpClient",
     "McpError",
@@ -142,6 +157,7 @@ __all__ = [
     "ModelSelector",
     "Orchestrator",
     "ParallelExecutor",
+    "RedBlueExecutor",
     "PersonalityRegistry",
     "PersonalityTrait",
     "Phase",

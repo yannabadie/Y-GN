@@ -1,3 +1,4 @@
+pub mod a2a;
 pub mod audit;
 pub mod channel;
 pub mod config;
@@ -26,3 +27,4 @@ pub mod telemetry;
 pub mod tool;
 pub mod tunnel;
 pub mod uacp;
+pub mod wassette;

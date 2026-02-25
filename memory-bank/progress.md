@@ -125,7 +125,19 @@
 - [FIXED] EvidenceEntry.kind accepted arbitrary strings
 - [FIXED] No timeout on HiveMind LLM phases (Gemini hangs on 3rd call)
 
+### v0.3.0 — Compliance, Security, Interoperability (2026-02-25)
+- [x] A1: Evidence Pack Crypto — SHA-256 hash chain, ed25519 signing, RFC 6962 Merkle tree (EU AI Act Art. 12)
+- [x] A3: Guard v2 — GuardBackend ABC, RegexGuard rename, ToolInvocationGuard (whitelist + rate limit + Log-To-Leak), scoring, ClassifierGuard stub
+- [x] B3: Red/Blue Executor — 10-template sync mode + LLM adversarial async mode (EU AI Act Art. 9)
+- [x] B1: Brain MCP Server — JSON-RPC 2.0 over stdio, 5 tools (orchestrate, guard_check, evidence_export, swarm_execute, memory_recall)
+- [x] A2: Wassette Sandbox — WassetteSandbox struct, policy mapping, fallback to ProcessSandbox
+- [x] A4: MCP Streamable HTTP — handle_jsonrpc() refactor, POST /mcp route, SSE stub
+- [x] B2: A2A Agent Cards — GET /.well-known/agent.json, POST /a2a (SendMessage, GetTask, ListTasks)
+- [x] 23 new Python tests + 11 new Rust tests
+- [x] pynacl>=1.5.0 dependency added
+- [x] ruff clean, all tests green
+
 ## Summary
 
-All milestones M0–M8 + Post-MVP complete. **v0.2.1 released 2026-02-25.**
-Total: **336 Rust tests + 313+ Python tests = 649+ tests**, all green.
+All milestones M0–M8 + Post-MVP + v0.3.0 complete. **v0.3.0 released 2026-02-25.**
+Total: **344 Rust tests + 336 Python tests = 680 tests**, all green.

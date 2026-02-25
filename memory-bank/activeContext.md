@@ -2,45 +2,39 @@
 
 ## Current Focus
 
-- [2026-02-25] Post-audit overhaul: fact-first docs, bug fixes, real E2E verification
-- Version alignment: v0.2.1 across pyproject.toml, Cargo.toml, __init__.py, CHANGELOG
-- 4 bug fixes applied: model hardcode, stale fallback, evidence kind constraint, phase timeout
+- [2026-02-25] v0.3.0 release: Compliance, Security, Interoperability
+- EU AI Act Art. 12 (evidence crypto) + Art. 9 (adversarial testing) compliance
+- Brain↔Core MCP bidirectional: Brain is now both client AND server
+- A2A protocol support for agent interoperability
 
 ## Completed Today (2026-02-25)
 
-- Version alignment: 0.1.0 → 0.2.1 in pyproject.toml, Cargo.toml, __init__.py
-- Fix: HiveMind/Swarm model="default" → provider.name() (5 locations)
-- Fix: ModelSelector stale fallback "claude-3-5-sonnet-20241022" → "gpt-5.2-codex"
-- Fix: EvidenceKind StrEnum constrains kind field (input/decision/tool_call/source/output/error)
-- Fix: HiveMind phase_timeout with asyncio.wait_for + graceful fallback
-- README fact-first rewrite: "Works Today" vs "Roadmap / Known Stubs"
-- New ygn-core/README.md
-- 14 new tests (3 hivemind, 1 router, 5 evidence, 5 guard)
+### v0.3.0 — 7 phases implemented
+- A1: Evidence Pack Crypto — hash chain + ed25519 signing + Merkle tree
+- A3: Guard v2 — GuardBackend ABC, scoring, ToolInvocationGuard, ClassifierGuard stub
+- B3: Red/Blue Executor — template attacks (sync) + LLM adversarial (async)
+- B1: Brain MCP Server — 5 tools over stdio JSON-RPC 2.0
+- A2: Wassette Sandbox — policy mapping, availability check, fallback
+- A4: MCP Streamable HTTP — handle_jsonrpc() refactor, POST /mcp route
+- B2: A2A Agent Cards — /.well-known/agent.json + POST /a2a
 
 ## Test Counts (2026-02-25)
 
-- Rust: 336 tests
-- Python: 299+ tests (before new additions) + 14 new = 313+
-- Total: 649+
-
-## Known Bugs (Fixed 2026-02-25)
-
-- [FIXED] model="default" hardcoded in HiveMind + Swarm async pipeline
-- [FIXED] ModelSelector fallback referenced stale Claude model
-- [FIXED] EvidenceEntry.kind unconstrained (any string accepted)
-- [FIXED] HiveMind pipeline had no per-phase timeout
+- Rust: 344 tests (336 + 8 new from wassette/a2a/gateway)
+- Python: 336 tests (313 + 23 new from evidence/guard/swarm/mcp_server)
+- Total: 680
 
 ## Known Gaps (Documented)
 
-- Guard regex bypassed by unicode homoglyphs and base64 encoding
-- WASM/WASI: process-level policy checks only, no wasmtime runtime
+- Guard regex bypassed by unicode homoglyphs and base64 encoding (ClassifierGuard stub ready for ML-based)
+- Wassette: integration ready but binary not yet available on Windows
+- A2A: TaskStore is in-memory per-request (not shared across requests in gateway)
 - Landlock: types exist, apply_linux() is explicit stub
 - Distributed registry: in-memory HashMap, lost on restart
 - Temporal KG: ColdEntry.relations declared, never populated
-- Swarm Red/Blue, PingPong, LeadSupport: enum values only
-- Brain is MCP client only (cannot serve tools)
 
 ## Current Blockers
 
 - HiveMind full pipeline with Gemini CLI times out on 3rd LLM call (use phase_timeout)
 - Real LLM calls require CLI tools installed (codex, gemini)
+- credential_vault::tests::drop_zeros test crashes on Windows (pre-existing unsafe issue)

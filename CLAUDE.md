@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Current version: v0.2.1**
+**Current version: v0.3.0**
 
 Y-GN (Yggdrasil-Grid Nexus) is a distributed multi-agent runtime that separates **reasoning** from **execution**:
 
@@ -57,15 +57,24 @@ ygn-core registry self-info    # Show this node's info
 ygn-core diagnose              # Run diagnostics on stdin
 ```
 
+### CLI commands (ygn-brain)
+```bash
+ygn-brain-mcp                  # Start Brain MCP server over stdio
+ygn-brain-repl                 # Interactive REPL
+```
+
 ### Gateway HTTP routes
 - `GET /health` — Service health check
 - `GET /providers` — List all configured LLM providers with capabilities
 - `GET /health/providers` — Health status of all providers (circuit breaker state)
+- `POST /mcp` — MCP over HTTP (JSON-RPC 2.0, Streamable HTTP transport)
+- `GET /.well-known/agent.json` — A2A Agent Card discovery
+- `POST /a2a` — A2A message handler (SendMessage, GetTask, ListTasks)
 
 ### Test counts
-- Rust (ygn-core): 336 tests
-- Python (ygn-brain): 313 tests
-- Total: 649 tests
+- Rust (ygn-core): 344 tests
+- Python (ygn-brain): 336 tests
+- Total: 680 tests
 
 ## Architecture
 
@@ -83,11 +92,11 @@ The former monolithic `OrchestratorV7` is decomposed into:
 - **StateMachineHandler** — FSM transitions
 - **TaskRouter** — dispatches to swarm executors
 - **ContextBuilder** — assembles context for LLM calls
-- **GuardPipeline** — security/validation guards
+- **GuardPipeline** — security/validation guards with GuardBackend ABC, scoring, ToolInvocationGuard
 - **TaskExecutor** — runs the plan
-- **EvidencePackGenerator** — produces auditable JSONL trace (inputs, decisions, tool calls, sources, outputs, telemetry IDs)
+- **EvidencePackGenerator** — produces auditable JSONL trace with SHA-256 hash chain, ed25519 signing, RFC 6962 Merkle tree (EU AI Act Art. 12)
 
-Swarm modes: Parallel, Sequential, RedBlue, PingPong, LeadSupport, Specialist.
+Swarm modes: Parallel, Sequential, RedBlue (adversarial testing), PingPong, LeadSupport, Specialist.
 
 LLM integration:
 - **LLMProvider** — abstract base class for provider adapters (StubLLMProvider for testing)
@@ -113,14 +122,19 @@ Key Python modules:
 - `provider_router.py` — ProviderRouter + ModelSelector for task-based model selection
 - `hivemind.py` — HiveMind.run_with_provider() for async LLM-backed pipeline
 - `orchestrator.py` — Orchestrator.run_async() for async orchestration
+- `evidence.py` — EvidencePack with hash chain, ed25519 signing, Merkle tree
+- `guard.py` — GuardBackend ABC, RegexGuard, ToolInvocationGuard, scoring
+- `guard_backends.py` — ClassifierGuard ABC, StubClassifierGuard
+- `swarm.py` — RedBlueExecutor (template + LLM adversarial testing)
+- `mcp_server.py` — Brain MCP server (5 tools: orchestrate, guard_check, evidence_export, swarm_execute, memory_recall)
 
 ### ygn-core internals
 Trait-based subsystems: `providers`, `channels`, `tools`, `memory`, `security`, `runtime`. Key components:
-- CLI + daemon + gateway (Axum) with `/health`, `/providers`, `/health/providers` routes
+- CLI + daemon + gateway (Axum) with `/health`, `/providers`, `/health/providers`, `POST /mcp`, `GET /.well-known/agent.json`, `POST /a2a` routes
 - Multi-provider LLM: ClaudeProvider, OpenAIProvider, GeminiProvider, OllamaProvider + ProviderRegistry
 - Credential vault (zero-on-drop), rate limiter (token-bucket), provider health (circuit breaker)
 - Channels (Telegram, Discord, Matrix) + tunnels (cloudflared, tailscale, ngrok)
-- WASM/WASI sandbox with profiles: `no-net`, `net`, `read-only-fs`, `scratch-fs` — **note:** process-level policy checks only; no wasmtime runtime is embedded
+- WASM/WASI sandbox with profiles: `no-net`, `net`, `read-only-fs`, `scratch-fs` — process-level policy checks; optional Wassette integration (`wassette.rs`) for real WASM component execution
 - Memory engine (SQLite) + caches
 - Skills system with topological sort execution
 - Config with JSON schema export; fields `ygn.node_role` (edge/core/brain-proxy) and `trust_tier`
@@ -131,7 +145,7 @@ Trait-based subsystems: `providers`, `channels`, `tools`, `memory`, `security`, 
 - **Cold** — Temporal Knowledge Graph (Zep/Graphiti-inspired) + doc store; HippoRAG mode (KG + Personalized PageRank) for multi-hop reasoning. **Note:** `relations` table is declared but never populated; search uses word-overlap scoring, not vector embeddings
 
 ### Security model ("multi-wall")
-WASM/WASI sandbox (process-level policy checks) → OS sandbox (Landlock types exist but `apply_linux()` is a stub — not enforced) → action allowlists/RBAC → runtime behavior analysis (HeteroGAT-Rank) → approval gates for HIGH-RISK actions.
+WASM/WASI sandbox (process-level + optional Wassette) → OS sandbox (Landlock types exist but `apply_linux()` is a stub — not enforced) → action allowlists/RBAC → GuardPipeline v2 (RegexGuard + ToolInvocationGuard + ClassifierGuard stubs) → runtime behavior analysis (HeteroGAT-Rank) → Red/Blue adversarial testing (EU AI Act Art. 9) → approval gates for HIGH-RISK actions.
 
 ## Agent Team Roles
 
@@ -166,7 +180,7 @@ Always read these files at session start. Update them when significant changes o
 
 M0 (Bootstrap) → M1 (Core usable) → M2 (Brain usable) → M3 (Brain↔Core integration) → M4 (Secure sandbox) → M5 (Memory v1) → M6 (IoA distributed) → M7 (Self-healing) → M8 (Release) → Post-MVP (Multi-Provider LLM)
 
-All milestones complete (current release: v0.2.1). The ROADMAP.md YAML block is the authoritative source for epic/task details and acceptance criteria.
+All milestones complete (current release: v0.3.0). The ROADMAP.md YAML block is the authoritative source for epic/task details and acceptance criteria.
 
 ## Key Constraints
 

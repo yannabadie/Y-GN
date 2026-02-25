@@ -20,3 +20,9 @@
 | 2026-02-25 | Evidence crypto-signing deferred (EU AI Act Aug 2026) | Evidence Packs need tamper-proof signatures for regulatory compliance. Timeline: before Aug 2026 EU AI Act deadline. |
 | 2026-02-25 | Guard v2: regex → classifier (arXiv:2505.03574) | Current regex guard has known gaps (unicode homoglyphs, base64 bypass). LlamaFirewall-style classifier recommended for production. |
 | 2026-02-25 | Evaluate Wassette before custom WASM runtime | Microsoft Wassette uses same Brain↔Core + WASM architecture. Evaluate before building custom wasmtime integration. |
+| 2026-02-25 | v0.3.0: Evidence crypto with pynacl ed25519 | SHA-256 hash chain + ed25519 signing + RFC 6962 Merkle tree. pynacl chosen for ed25519 (mature, audited, no C compilation issues). Signing opt-in, hash chain automatic. EU AI Act Art. 12 compliance. |
+| 2026-02-25 | v0.3.0: GuardBackend ABC + scoring | Introduced abstract base to allow composable guards (regex, tool invocation, ML classifier). Score 0-100 added alongside bool allowed for gradual enforcement. InputGuard aliased to RegexGuard for backward compat. |
+| 2026-02-25 | v0.3.0: Red/Blue as EU AI Act Art. 9 evidence | Two modes: sync (10 template attacks) for fast CI, async (LLM-generated adversarial prompts) for thorough testing. Results written to EvidencePack for regulatory audit. |
+| 2026-02-25 | v0.3.0: Brain MCP server — stdio only for v1 | 5 tools exposed (orchestrate, guard_check, evidence_export, swarm_execute, memory_recall). HTTP deferred to Core gateway proxy. Brain now bidirectional: client + server. |
+| 2026-02-25 | v0.3.0: MCP handle_jsonrpc() refactor for HTTP reuse | Extracted reusable Value→Value handler from stdio loop. Both stdio and POST /mcp use same handler. SSE streaming deferred. |
+| 2026-02-25 | v0.3.0: A2A subset implementation | Agent Card at /.well-known/agent.json + SendMessage/GetTask/ListTasks. Minimal viable A2A for agent discovery and interop. Full spec deferred. |

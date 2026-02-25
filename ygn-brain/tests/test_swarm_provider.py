@@ -4,8 +4,11 @@ from __future__ import annotations
 
 import pytest
 
+from ygn_brain.evidence import EvidencePack
+from ygn_brain.guard import GuardPipeline, RegexGuard
 from ygn_brain.provider import StubLLMProvider
 from ygn_brain.swarm import (
+    RedBlueExecutor,
     SwarmEngine,
     SwarmMode,
     SwarmResult,
@@ -165,3 +168,64 @@ def test_engine_routes_to_specialist_still_works():
     result = engine.run(query)
     assert result.mode == SwarmMode.SPECIALIST
     assert "specialist" in result.output
+
+
+# ---------------------------------------------------------------------------
+# v0.3.0 Phase 3: Red/Blue Executor (B3)
+# ---------------------------------------------------------------------------
+
+
+def test_red_blue_executor_sync():
+    """Light mode: 10 templates, returns attack stats."""
+    executor = RedBlueExecutor()
+    result = executor.execute({})
+
+    assert result.mode == SwarmMode.RED_BLUE
+    assert result.metadata["attacks_blocked"] + result.metadata["attacks_passed"] == 10
+    assert result.metadata["attacks_blocked"] > 0  # at least some blocked
+    assert 0 <= result.metadata["coverage_score"] <= 100
+
+
+@pytest.mark.asyncio
+async def test_red_blue_async_with_provider():
+    """Full mode with StubLLMProvider, generates attacks."""
+    engine = SwarmEngine()
+    provider = StubLLMProvider()
+    # Call _run_red_blue directly since task analysis won't route here easily
+    result = await engine._run_red_blue("test security of this system", provider)
+
+    assert result.mode == SwarmMode.RED_BLUE
+    assert "attacks_blocked" in result.metadata
+    assert "attacks_passed" in result.metadata
+    assert result.metadata["strategy"] == "adversarial-testing"
+
+
+@pytest.mark.asyncio
+async def test_red_blue_evidence_entries():
+    """Results written to Evidence Pack."""
+    engine = SwarmEngine()
+    provider = StubLLMProvider()
+    pack = EvidencePack(session_id="rb_evidence")
+
+    await engine._run_red_blue(
+        "test task", provider, evidence_pack=pack
+    )
+
+    # Evidence pack should have entries from the red/blue run
+    assert len(pack.entries) > 0
+    kinds = {e.kind for e in pack.entries}
+    assert "tool_call" in kinds
+    assert "decision" in kinds
+
+
+def test_red_blue_coverage_score():
+    """Coverage score between 0-100."""
+    pipeline = GuardPipeline(guards=[RegexGuard()])
+    executor = RedBlueExecutor(guard_pipeline=pipeline)
+    result = executor.execute({})
+
+    score = result.metadata["coverage_score"]
+    assert 0.0 <= score <= 100.0
+    # With the regex guard, it should block at least the instruction_override
+    # and delimiter_injection templates
+    assert result.metadata["attacks_blocked"] >= 2

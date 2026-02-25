@@ -3,6 +3,40 @@
 All notable changes to Y-GN (Yggdrasil-Grid Nexus) are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.3.0] - 2026-02-25
+
+Compliance, Security, Interoperability — EU AI Act readiness, guard v2,
+adversarial testing, Brain MCP server, A2A agent cards.
+
+### Added
+
+- **Evidence Pack Crypto (A1)**: SHA-256 hash chain linking entries, ed25519
+  signing via pynacl, RFC 6962 Merkle tree root. EU AI Act Art. 12 fields:
+  `start_time`, `end_time`, `model_id`, `signer_public_key`, `merkle_root`.
+  Time-sortable `entry_id` (UUIDv7-like). Backward compatible — all new fields
+  have defaults.
+- **Guard v2 Interface (A3)**: `GuardBackend` ABC with `check()` → `GuardResult`
+  (now includes `score: float`). `RegexGuard` (renamed from `InputGuard`, alias
+  kept). `ToolInvocationGuard` with tool whitelist, per-session rate limit, and
+  Log-To-Leak detection. `ClassifierGuard` ABC stub in `guard_backends.py` for
+  future ML integration (LlamaFirewall path documented).
+- **Red/Blue Executor (B3)**: `RedBlueExecutor` sync mode with 10 attack
+  templates. `SwarmEngine._run_red_blue()` async mode using LLM provider as red
+  agent. Results formatted as EU AI Act Art. 9 adversarial testing evidence.
+- **Brain MCP Server (B1)**: `McpBrainServer` class exposing 5 tools via
+  JSON-RPC 2.0 over stdio: `orchestrate`, `guard_check`, `evidence_export`,
+  `swarm_execute`, `memory_recall`. CLI entry: `ygn-brain-mcp`.
+- **Wassette Sandbox (A2)**: `WassetteSandbox` with policy mapping (Y-GN
+  profiles → Wassette permission flags), availability check, automatic fallback
+  to `ProcessSandbox`.
+- **MCP Streamable HTTP (A4)**: `handle_jsonrpc()` extracted as reusable
+  `Value → Value` handler. `POST /mcp` gateway route for HTTP transport.
+- **A2A Agent Cards (B2)**: `GET /.well-known/agent.json` returns Agent Card
+  with skills and interfaces. `POST /a2a` handles `SendMessage`, `GetTask`,
+  `ListTasks`.
+- 23 new Python tests, 11 new Rust tests (680 total, all green).
+- `pynacl>=1.5.0` dependency.
+
 ## [0.2.1] - 2026-02-25
 
 Post-audit overhaul — fact-first documentation, 4 bug fixes, real E2E verification.

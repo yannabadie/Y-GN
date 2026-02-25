@@ -107,6 +107,52 @@ impl McpServer {
 
     // -- public entry point ------------------------------------------------
 
+    /// Handle a parsed JSON-RPC value and return a JSON-RPC response value.
+    ///
+    /// This is the reusable core handler used by both stdio and HTTP transports.
+    pub fn handle_jsonrpc(&self, request: Value) -> Option<Value> {
+        let req: JsonRpcRequest = match serde_json::from_value(request) {
+            Ok(r) => r,
+            Err(e) => {
+                return Some(serde_json::to_value(JsonRpcErrorResponse {
+                    jsonrpc: "2.0".into(),
+                    id: Value::Null,
+                    error: JsonRpcError {
+                        code: -32700,
+                        message: format!("Parse error: {e}"),
+                    },
+                }).unwrap());
+            }
+        };
+
+        let id = req.id?;
+
+        let result = match req.method.as_str() {
+            "initialize" => self.handle_initialize(),
+            "tools/list" => self.handle_tools_list(),
+            "tools/call" => self.handle_tools_call(&req.params),
+            _ => Err((
+                METHOD_NOT_FOUND,
+                format!("Method not found: {}", req.method),
+            )),
+        };
+
+        let response = match result {
+            Ok(value) => serde_json::to_value(JsonRpcResponse {
+                jsonrpc: "2.0".into(),
+                id,
+                result: value,
+            }).unwrap(),
+            Err((code, message)) => serde_json::to_value(JsonRpcErrorResponse {
+                jsonrpc: "2.0".into(),
+                id,
+                error: JsonRpcError { code, message },
+            }).unwrap(),
+        };
+
+        Some(response)
+    }
+
     /// Parse a single JSON-RPC line and return an optional response.
     ///
     /// Returns `None` for notifications (messages without an `id`).

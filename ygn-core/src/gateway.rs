@@ -1,6 +1,8 @@
-use axum::{routing::get, Json, Router};
+use axum::{routing::{get, post}, Json, Router};
 use serde_json::{json, Value};
 
+use crate::a2a::{self, TaskStore};
+use crate::mcp::McpServer;
 use crate::multi_provider::ProviderRegistry;
 use crate::provider_health::ProviderHealth;
 
@@ -84,12 +86,50 @@ async fn providers_health() -> Json<Value> {
     }))
 }
 
+// ---------------------------------------------------------------------------
+// MCP over HTTP (Phase 6 — A4)
+// ---------------------------------------------------------------------------
+
+/// `POST /mcp` — JSON-RPC request via HTTP.
+///
+/// Accepts a JSON-RPC 2.0 request body, routes it through the same handler
+/// used by the stdio MCP server.
+async fn mcp_http(Json(body): Json<Value>) -> Json<Value> {
+    let server = McpServer::with_default_tools();
+    match server.handle_jsonrpc(body) {
+        Some(response) => Json(response),
+        None => Json(json!(null)),
+    }
+}
+
+// ---------------------------------------------------------------------------
+// A2A routes (Phase 7 — B2)
+// ---------------------------------------------------------------------------
+
+/// `GET /.well-known/agent.json` — Agent Card discovery.
+async fn agent_card() -> Json<Value> {
+    Json(a2a::agent_card())
+}
+
+/// `POST /a2a` — A2A message handler.
+async fn a2a_handler(Json(body): Json<Value>) -> Json<Value> {
+    let store = TaskStore::new();
+    Json(a2a::handle_a2a(&body, &store))
+}
+
+// ---------------------------------------------------------------------------
+// Router
+// ---------------------------------------------------------------------------
+
 /// Build the full application router.
 pub fn build_router() -> Router {
     Router::new()
         .route("/health", get(health))
         .route("/providers", get(list_providers))
         .route("/health/providers", get(providers_health))
+        .route("/mcp", post(mcp_http))
+        .route("/.well-known/agent.json", get(agent_card))
+        .route("/a2a", post(a2a_handler))
 }
 
 pub async fn run(bind: &str) -> anyhow::Result<()> {
@@ -232,5 +272,153 @@ mod tests {
             assert_eq!(status["healthy"], true);
             assert_eq!(status["total_requests"], 0);
         }
+    }
+
+    // -----------------------------------------------------------------------
+    // Phase 6: MCP over HTTP tests
+    // -----------------------------------------------------------------------
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn mcp_http_echo_tool() {
+        let app = test_router();
+        let body = serde_json::to_string(&json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "tools/call",
+            "params": {"name": "echo", "arguments": {"input": "hello via http"}}
+        }))
+        .unwrap();
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/mcp")
+                    .header("content-type", "application/json")
+                    .body(Body::from(body))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let bytes = response.into_body().collect().await.unwrap().to_bytes();
+        let json: Value = serde_json::from_slice(&bytes).unwrap();
+        let content = json["result"]["content"].as_array().unwrap();
+        assert_eq!(content[0]["text"], "hello via http");
+    }
+
+    #[tokio::test]
+    async fn mcp_http_tools_list() {
+        let app = test_router();
+        let body = serde_json::to_string(&json!({
+            "jsonrpc": "2.0",
+            "id": 2,
+            "method": "tools/list",
+            "params": {}
+        }))
+        .unwrap();
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/mcp")
+                    .header("content-type", "application/json")
+                    .body(Body::from(body))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let bytes = response.into_body().collect().await.unwrap().to_bytes();
+        let json: Value = serde_json::from_slice(&bytes).unwrap();
+        let tools = json["result"]["tools"].as_array().unwrap();
+        assert!(!tools.is_empty());
+    }
+
+    #[tokio::test]
+    async fn mcp_http_invalid_method() {
+        let app = test_router();
+        let body = serde_json::to_string(&json!({
+            "jsonrpc": "2.0",
+            "id": 3,
+            "method": "bogus/method",
+            "params": {}
+        }))
+        .unwrap();
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/mcp")
+                    .header("content-type", "application/json")
+                    .body(Body::from(body))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let bytes = response.into_body().collect().await.unwrap().to_bytes();
+        let json: Value = serde_json::from_slice(&bytes).unwrap();
+        assert_eq!(json["error"]["code"], -32601);
+    }
+
+    // -----------------------------------------------------------------------
+    // Phase 7: A2A tests
+    // -----------------------------------------------------------------------
+
+    #[tokio::test]
+    async fn agent_card_discovery() {
+        let app = test_router();
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/.well-known/agent.json")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let bytes = response.into_body().collect().await.unwrap().to_bytes();
+        let json: Value = serde_json::from_slice(&bytes).unwrap();
+        assert_eq!(json["name"], "Y-GN");
+        assert!(json["skills"].as_array().unwrap().len() >= 3);
+    }
+
+    #[tokio::test]
+    async fn a2a_send_message() {
+        let app = test_router();
+        let body = serde_json::to_string(&json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "SendMessage",
+            "params": {"message": "Hello agent"}
+        }))
+        .unwrap();
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/a2a")
+                    .header("content-type", "application/json")
+                    .body(Body::from(body))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let bytes = response.into_body().collect().await.unwrap().to_bytes();
+        let json: Value = serde_json::from_slice(&bytes).unwrap();
+        let task = &json["result"]["task"];
+        assert!(!task["id"].as_str().unwrap().is_empty());
+        assert_eq!(task["status"], "completed");
     }
 }
