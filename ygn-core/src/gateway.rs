@@ -177,6 +177,38 @@ async fn registry_sync(Json(body): Json<Value>) -> Json<Value> {
 }
 
 // ---------------------------------------------------------------------------
+// Guard / Sessions / Memory endpoints
+// ---------------------------------------------------------------------------
+
+/// `GET /guard/log` — Paginated guard decision log.
+async fn guard_log() -> Json<Value> {
+    // For now, return empty list (will read from ~/.ygn/guard_log.jsonl in future)
+    Json(json!({
+        "entries": [],
+        "count": 0,
+    }))
+}
+
+/// `GET /sessions` — List Evidence Pack sessions.
+async fn sessions_list() -> Json<Value> {
+    // For now, return empty list (will read from ~/.ygn/evidence/ in future)
+    Json(json!({
+        "sessions": [],
+        "count": 0,
+    }))
+}
+
+/// `GET /memory/stats` — Memory tier distribution.
+async fn memory_stats() -> Json<Value> {
+    Json(json!({
+        "hot_count": 0,
+        "warm_count": 0,
+        "cold_count": 0,
+        "total": 0,
+    }))
+}
+
+// ---------------------------------------------------------------------------
 // Router
 // ---------------------------------------------------------------------------
 
@@ -191,6 +223,9 @@ pub fn build_router() -> Router {
         .route("/a2a", post(a2a_handler))
         .route("/registry/nodes", get(list_registry_nodes))
         .route("/registry/sync", post(registry_sync))
+        .route("/guard/log", get(guard_log))
+        .route("/sessions", get(sessions_list))
+        .route("/memory/stats", get(memory_stats))
 }
 
 pub async fn run(bind: &str) -> anyhow::Result<()> {
@@ -531,5 +566,63 @@ mod tests {
         let bytes = response.into_body().collect().await.unwrap().to_bytes();
         let json: Value = serde_json::from_slice(&bytes).unwrap();
         assert!(json.get("accepted").is_some());
+    }
+
+    // -----------------------------------------------------------------------
+    // Guard / Sessions / Memory tests
+    // -----------------------------------------------------------------------
+
+    #[tokio::test]
+    async fn guard_log_returns_ok() {
+        let app = test_router();
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/guard/log")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response.into_body().collect().await.unwrap().to_bytes();
+        let json: Value = serde_json::from_slice(&body).unwrap();
+        assert!(json["entries"].is_array());
+    }
+
+    #[tokio::test]
+    async fn sessions_list_returns_ok() {
+        let app = test_router();
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/sessions")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response.into_body().collect().await.unwrap().to_bytes();
+        let json: Value = serde_json::from_slice(&body).unwrap();
+        assert!(json["sessions"].is_array());
+    }
+
+    #[tokio::test]
+    async fn memory_stats_returns_ok() {
+        let app = test_router();
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/memory/stats")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response.into_body().collect().await.unwrap().to_bytes();
+        let json: Value = serde_json::from_slice(&body).unwrap();
+        assert!(json["total"].is_number());
     }
 }
