@@ -5,6 +5,8 @@ use crate::a2a::{self, TaskStore};
 use crate::mcp::McpServer;
 use crate::multi_provider::ProviderRegistry;
 use crate::provider_health::ProviderHealth;
+use crate::registry::NodeRegistry;
+use crate::sqlite_registry::SqliteRegistry;
 
 async fn health() -> Json<Value> {
     Json(json!({
@@ -118,6 +120,41 @@ async fn a2a_handler(Json(body): Json<Value>) -> Json<Value> {
 }
 
 // ---------------------------------------------------------------------------
+// Registry routes
+// ---------------------------------------------------------------------------
+
+/// `GET /registry/nodes` — List all registered nodes.
+async fn list_registry_nodes() -> Json<Value> {
+    let registry = SqliteRegistry::new(":memory:").unwrap();
+    // For now, returns an empty node list (no persisted state in this handler)
+    // In production, registry would be shared state via Axum State
+    let filter = crate::registry::DiscoveryFilter {
+        role: None,
+        trust_tier: None,
+        capability: None,
+        max_staleness_seconds: None,
+    };
+    let nodes = registry.discover(filter).await.unwrap_or_default();
+    let node_values: Vec<Value> = nodes
+        .iter()
+        .map(|n| {
+            json!({
+                "node_id": n.node_id,
+                "role": format!("{}", n.role),
+                "trust_tier": format!("{}", n.trust_tier),
+                "capabilities": n.capabilities,
+                "last_seen": n.last_seen.to_rfc3339(),
+            })
+        })
+        .collect();
+
+    Json(json!({
+        "nodes": node_values,
+        "count": node_values.len(),
+    }))
+}
+
+// ---------------------------------------------------------------------------
 // Router
 // ---------------------------------------------------------------------------
 
@@ -130,6 +167,7 @@ pub fn build_router() -> Router {
         .route("/mcp", post(mcp_http))
         .route("/.well-known/agent.json", get(agent_card))
         .route("/a2a", post(a2a_handler))
+        .route("/registry/nodes", get(list_registry_nodes))
 }
 
 pub async fn run(bind: &str) -> anyhow::Result<()> {
@@ -420,5 +458,29 @@ mod tests {
         let task = &json["result"]["task"];
         assert!(!task["id"].as_str().unwrap().is_empty());
         assert_eq!(task["status"], "completed");
+    }
+
+    // -----------------------------------------------------------------------
+    // Registry API tests
+    // -----------------------------------------------------------------------
+
+    #[tokio::test]
+    async fn registry_nodes_returns_ok() {
+        let app = test_router();
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/registry/nodes")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = response.into_body().collect().await.unwrap().to_bytes();
+        let json: Value = serde_json::from_slice(&body).unwrap();
+        assert!(json["nodes"].is_array());
+        assert!(json["count"].is_number());
     }
 }
