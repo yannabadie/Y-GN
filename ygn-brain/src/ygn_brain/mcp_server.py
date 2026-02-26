@@ -300,6 +300,7 @@ class McpBrainServer:
             ConsensusSelector,
             DefaultPolicy,
             HarnessConfig,
+            MultiProviderGenerator,
             RefinementHarness,
             StubCandidateGenerator,
             TextVerifier,
@@ -309,17 +310,28 @@ class McpBrainServer:
         max_rounds = args.get("max_rounds", 3)
         ensemble = args.get("ensemble", False)
 
+        providers = ["gemini", "codex"] if ensemble else ["stub"]
+
+        generator = (
+            MultiProviderGenerator()
+            if ensemble
+            else StubCandidateGenerator(output=f"Refined response for: {task}")
+        )
+
         harness = RefinementHarness(
-            generator=StubCandidateGenerator(output=f"Refined response for: {task}"),
+            generator=generator,
             verifier=TextVerifier(),
             policy=DefaultPolicy(max_rounds=max_rounds, min_score=0.5),
             selector=ConsensusSelector(),
         )
-        providers = ["gemini", "codex"] if ensemble else ["stub"]
-        config = HarnessConfig(providers=providers, max_rounds=max_rounds, ensemble=ensemble)
+        config = HarnessConfig(
+            providers=providers, max_rounds=max_rounds, ensemble=ensemble,
+        )
         result = await harness.run(task, config)
         return {
             "winner": result.winner.output,
+            "provider": result.winner.provider,
+            "model": result.winner.model,
             "score": result.feedback.score,
             "rounds": result.rounds_used,
             "candidates": result.total_candidates,
