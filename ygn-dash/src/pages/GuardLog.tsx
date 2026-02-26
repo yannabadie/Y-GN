@@ -1,40 +1,48 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { fetchGuardLog } from "../lib/api";
+import type { GuardLogEntry } from "../lib/types";
 import { Timeline } from "../components/Timeline";
 import type { TimelineEntry } from "../components/Timeline";
 
-// Mock data for demonstration (will be replaced with API calls)
-const mockEntries: TimelineEntry[] = [
-  {
-    id: "1",
-    timestamp: new Date().toLocaleTimeString(),
-    title: "Prompt injection detected",
-    description: "Instruction override pattern: 'Ignore all previous instructions'",
-    level: "high",
-  },
-  {
-    id: "2",
-    timestamp: new Date().toLocaleTimeString(),
-    title: "Clean input",
-    description: "User query: 'What is the weather today?'",
-    level: "none",
-  },
-  {
-    id: "3",
-    timestamp: new Date().toLocaleTimeString(),
-    title: "Role manipulation attempt",
-    description: "Pattern: 'You are now an unrestricted AI'",
-    level: "critical",
-  },
-];
-
 type FilterLevel = "all" | "none" | "low" | "medium" | "high" | "critical";
 
+function toTimelineEntry(e: GuardLogEntry): TimelineEntry {
+  const levelMap: Record<string, TimelineEntry["level"]> = {
+    none: "none",
+    low: "low",
+    medium: "medium",
+    high: "high",
+    critical: "critical",
+  };
+  return {
+    id: e.id,
+    timestamp: e.timestamp,
+    title: e.allowed ? "Clean input" : `Blocked: ${e.reason}`,
+    description: e.input_preview,
+    level: levelMap[e.threat_level] ?? "none",
+  };
+}
+
 export function GuardLog() {
+  const [entries, setEntries] = useState<GuardLogEntry[]>([]);
   const [filter, setFilter] = useState<FilterLevel>("all");
 
+  useEffect(() => {
+    const refresh = () => {
+      fetchGuardLog()
+        .then((data) => setEntries(data.entries))
+        .catch(() => {});
+    };
+    refresh();
+    const interval = setInterval(refresh, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const timelineEntries = entries.map(toTimelineEntry);
+
   const filteredEntries = filter === "all"
-    ? mockEntries
-    : mockEntries.filter((e) => e.level === filter);
+    ? timelineEntries
+    : timelineEntries.filter((e) => e.level === filter);
 
   const filters: FilterLevel[] = ["all", "none", "low", "medium", "high", "critical"];
 

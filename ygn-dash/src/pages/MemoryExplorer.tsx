@@ -1,12 +1,23 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { fetchMemoryStats } from "../lib/api";
 import { TierChart } from "../components/TierChart";
 
 export function MemoryExplorer() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchMode, setSearchMode] = useState<"bm25" | "semantic">("bm25");
+  const [tierData, setTierData] = useState({ hot: 0, warm: 0, cold: 0 });
 
-  // Mock data
-  const tierData = { hot: 24, warm: 156, cold: 892 };
+  useEffect(() => {
+    fetchMemoryStats()
+      .then((data) =>
+        setTierData({
+          hot: data.hot_count,
+          warm: data.warm_count,
+          cold: data.cold_count,
+        }),
+      )
+      .catch(() => {});
+  }, []);
 
   return (
     <div className="p-6">

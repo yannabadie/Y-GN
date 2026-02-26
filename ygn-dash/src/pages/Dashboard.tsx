@@ -10,9 +10,14 @@ export function Dashboard() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchHealth().then(setHealth).catch(() => setError("Core offline"));
-    fetchProvidersHealth().then(setProviders).catch(() => {});
-    fetchGuardStats().then(setGuardStats).catch(() => {});
+    const refresh = () => {
+      fetchHealth().then(setHealth).catch(() => setError("Core offline"));
+      fetchProvidersHealth().then(setProviders).catch(() => {});
+      fetchGuardStats().then(setGuardStats).catch(() => {});
+    };
+    refresh();
+    const interval = setInterval(refresh, 10000);
+    return () => clearInterval(interval);
   }, []);
 
   return (
