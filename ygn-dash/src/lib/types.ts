@@ -49,3 +49,38 @@ export interface RegistryNodesResponse {
   nodes: NodeInfo[];
   count: number;
 }
+
+export interface GuardLogEntry {
+  id: string;
+  timestamp: string;
+  input_preview: string;
+  threat_level: string;
+  score: number;
+  backend: string;
+  reason: string;
+  allowed: boolean;
+}
+
+export interface GuardLogResponse {
+  entries: GuardLogEntry[];
+  count: number;
+}
+
+export interface SessionInfo {
+  id: string;
+  model: string;
+  entry_count: number;
+  timestamp: string;
+}
+
+export interface SessionsResponse {
+  sessions: SessionInfo[];
+  count: number;
+}
+
+export interface MemoryStatsResponse {
+  hot_count: number;
+  warm_count: number;
+  cold_count: number;
+  total: number;
+}
