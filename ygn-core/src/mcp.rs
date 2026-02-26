@@ -49,6 +49,7 @@ struct JsonRpcError {
 }
 
 // Standard JSON-RPC error codes
+const INVALID_REQUEST: i64 = -32600;
 const METHOD_NOT_FOUND: i64 = -32601;
 const INVALID_PARAMS: i64 = -32602;
 
@@ -111,6 +112,51 @@ impl McpServer {
     ///
     /// This is the reusable core handler used by both stdio and HTTP transports.
     pub fn handle_jsonrpc(&self, request: Value) -> Option<Value> {
+        // Validate required JSON-RPC 2.0 fields before deserialization.
+        // Per spec: -32600 = Invalid Request (valid JSON but not a valid Request object),
+        //           -32700 = Parse error (invalid JSON — handled by the caller).
+        if let Some(obj) = request.as_object() {
+            let has_jsonrpc = obj.contains_key("jsonrpc");
+            let has_method = obj.contains_key("method");
+            if !has_jsonrpc || !has_method {
+                let missing: Vec<&str> = [
+                    if !has_jsonrpc { Some("jsonrpc") } else { None },
+                    if !has_method { Some("method") } else { None },
+                ]
+                .into_iter()
+                .flatten()
+                .collect();
+                let id = obj.get("id").cloned().unwrap_or(Value::Null);
+                return Some(
+                    serde_json::to_value(JsonRpcErrorResponse {
+                        jsonrpc: "2.0".into(),
+                        id,
+                        error: JsonRpcError {
+                            code: INVALID_REQUEST,
+                            message: format!(
+                                "Invalid Request: missing required field(s): {}",
+                                missing.join(", ")
+                            ),
+                        },
+                    })
+                    .unwrap(),
+                );
+            }
+        } else {
+            // Not a JSON object at all — still an invalid request.
+            return Some(
+                serde_json::to_value(JsonRpcErrorResponse {
+                    jsonrpc: "2.0".into(),
+                    id: Value::Null,
+                    error: JsonRpcError {
+                        code: INVALID_REQUEST,
+                        message: "Invalid Request: expected a JSON object".into(),
+                    },
+                })
+                .unwrap(),
+            );
+        }
+
         let req: JsonRpcRequest = match serde_json::from_value(request) {
             Ok(r) => r,
             Err(e) => {
@@ -119,8 +165,8 @@ impl McpServer {
                         jsonrpc: "2.0".into(),
                         id: Value::Null,
                         error: JsonRpcError {
-                            code: -32700,
-                            message: format!("Parse error: {e}"),
+                            code: INVALID_REQUEST,
+                            message: format!("Invalid Request: {e}"),
                         },
                     })
                     .unwrap(),
@@ -167,16 +213,70 @@ impl McpServer {
             return None;
         }
 
-        let req: JsonRpcRequest = match serde_json::from_str(trimmed) {
-            Ok(r) => r,
+        // Step 1: Parse raw JSON. If this fails, it is a -32700 Parse error.
+        let raw: Value = match serde_json::from_str(trimmed) {
+            Ok(v) => v,
             Err(e) => {
-                // Parse error — respond with null id per JSON-RPC spec.
                 let err = JsonRpcErrorResponse {
                     jsonrpc: "2.0".into(),
                     id: Value::Null,
                     error: JsonRpcError {
                         code: -32700,
                         message: format!("Parse error: {e}"),
+                    },
+                };
+                return Some(serde_json::to_string(&err).unwrap());
+            }
+        };
+
+        // Step 2: Validate required JSON-RPC 2.0 fields.
+        if let Some(obj) = raw.as_object() {
+            let has_jsonrpc = obj.contains_key("jsonrpc");
+            let has_method = obj.contains_key("method");
+            if !has_jsonrpc || !has_method {
+                let missing: Vec<&str> = [
+                    if !has_jsonrpc { Some("jsonrpc") } else { None },
+                    if !has_method { Some("method") } else { None },
+                ]
+                .into_iter()
+                .flatten()
+                .collect();
+                let id = obj.get("id").cloned().unwrap_or(Value::Null);
+                let err = JsonRpcErrorResponse {
+                    jsonrpc: "2.0".into(),
+                    id,
+                    error: JsonRpcError {
+                        code: INVALID_REQUEST,
+                        message: format!(
+                            "Invalid Request: missing required field(s): {}",
+                            missing.join(", ")
+                        ),
+                    },
+                };
+                return Some(serde_json::to_string(&err).unwrap());
+            }
+        } else {
+            let err = JsonRpcErrorResponse {
+                jsonrpc: "2.0".into(),
+                id: Value::Null,
+                error: JsonRpcError {
+                    code: INVALID_REQUEST,
+                    message: "Invalid Request: expected a JSON object".into(),
+                },
+            };
+            return Some(serde_json::to_string(&err).unwrap());
+        }
+
+        // Step 3: Deserialize into typed request.
+        let req: JsonRpcRequest = match serde_json::from_value(raw) {
+            Ok(r) => r,
+            Err(e) => {
+                let err = JsonRpcErrorResponse {
+                    jsonrpc: "2.0".into(),
+                    id: Value::Null,
+                    error: JsonRpcError {
+                        code: INVALID_REQUEST,
+                        message: format!("Invalid Request: {e}"),
                     },
                 };
                 return Some(serde_json::to_string(&err).unwrap());
@@ -536,6 +636,70 @@ mod tests {
         let v = parse_response(&resp);
 
         assert_eq!(v["id"], "abc-123");
+    }
+
+    // -- invalid request (-32600) -----------------------------------------
+
+    #[test]
+    fn missing_method_returns_invalid_request() {
+        let srv = server();
+        let req = r#"{"jsonrpc":"2.0","id":20}"#;
+        let resp = srv.handle_message(req).expect("should produce a response");
+        let v = parse_response(&resp);
+
+        assert_eq!(v["id"], 20);
+        assert_eq!(v["error"]["code"], INVALID_REQUEST);
+        assert!(v["error"]["message"].as_str().unwrap().contains("method"));
+    }
+
+    #[test]
+    fn missing_jsonrpc_returns_invalid_request() {
+        let srv = server();
+        let req = r#"{"id":21,"method":"initialize","params":{}}"#;
+        let resp = srv.handle_message(req).expect("should produce a response");
+        let v = parse_response(&resp);
+
+        assert_eq!(v["id"], 21);
+        assert_eq!(v["error"]["code"], INVALID_REQUEST);
+        assert!(v["error"]["message"].as_str().unwrap().contains("jsonrpc"));
+    }
+
+    #[test]
+    fn non_object_json_returns_invalid_request() {
+        let srv = server();
+        let req = r#"[1,2,3]"#;
+        let resp = srv.handle_message(req).expect("should produce a response");
+        let v = parse_response(&resp);
+
+        assert_eq!(v["id"], Value::Null);
+        assert_eq!(v["error"]["code"], INVALID_REQUEST);
+        assert!(v["error"]["message"]
+            .as_str()
+            .unwrap()
+            .contains("expected a JSON object"));
+    }
+
+    #[test]
+    fn handle_jsonrpc_missing_method_returns_invalid_request() {
+        let srv = server();
+        let request = json!({"jsonrpc": "2.0", "id": 22});
+        let resp = srv
+            .handle_jsonrpc(request)
+            .expect("should produce a response");
+
+        assert_eq!(resp["id"], 22);
+        assert_eq!(resp["error"]["code"], INVALID_REQUEST);
+    }
+
+    #[test]
+    fn handle_jsonrpc_non_object_returns_invalid_request() {
+        let srv = server();
+        let request = json!("just a string");
+        let resp = srv
+            .handle_jsonrpc(request)
+            .expect("should produce a response");
+
+        assert_eq!(resp["error"]["code"], INVALID_REQUEST);
     }
 
     // -- policy-gated tool calls ------------------------------------------

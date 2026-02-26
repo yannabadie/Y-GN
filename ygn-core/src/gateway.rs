@@ -1,4 +1,5 @@
 use axum::{
+    response::IntoResponse,
     routing::{get, post},
     Json, Router,
 };
@@ -95,15 +96,41 @@ async fn providers_health() -> Json<Value> {
 // MCP over HTTP (Phase 6 — A4)
 // ---------------------------------------------------------------------------
 
-/// `POST /mcp` — JSON-RPC request via HTTP.
+/// `POST /mcp` — JSON-RPC request via HTTP (Streamable HTTP transport).
 ///
 /// Accepts a JSON-RPC 2.0 request body, routes it through the same handler
-/// used by the stdio MCP server.
-async fn mcp_http(Json(body): Json<Value>) -> Json<Value> {
+/// used by the stdio MCP server.  Supports `Accept` header awareness per the
+/// MCP Streamable HTTP specification:
+///   - `application/json` (default) → JSON response
+///   - `text/event-stream` → reserved for future SSE streaming; currently
+///     returns JSON with `application/json` content-type.
+///
+/// Notifications (no `id`) return 204 No Content.
+async fn mcp_http(headers: axum::http::HeaderMap, Json(body): Json<Value>) -> impl IntoResponse {
     let server = McpServer::with_default_tools();
-    match server.handle_jsonrpc(body) {
-        Some(response) => Json(response),
-        None => Json(json!(null)),
+    let accept = headers
+        .get("accept")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("application/json");
+
+    let response = server.handle_jsonrpc(body);
+
+    if accept.contains("text/event-stream") {
+        // Future: return Server-Sent Events stream.
+        // For now, still return JSON so clients get a valid response.
+        match response {
+            Some(json) => (
+                [(axum::http::header::CONTENT_TYPE, "application/json")],
+                Json(json),
+            )
+                .into_response(),
+            None => axum::http::StatusCode::NO_CONTENT.into_response(),
+        }
+    } else {
+        match response {
+            Some(json) => Json(json).into_response(),
+            None => axum::http::StatusCode::NO_CONTENT.into_response(),
+        }
     }
 }
 
@@ -239,9 +266,7 @@ async fn sessions_list() -> Json<Value> {
                     .and_then(|s| s.to_str())
                     .unwrap_or("unknown")
                     .to_string();
-                let size = std::fs::metadata(&path)
-                    .map(|m| m.len())
-                    .unwrap_or(0);
+                let size = std::fs::metadata(&path).map(|m| m.len()).unwrap_or(0);
                 sessions.push(json!({
                     "id": id,
                     "file": path.to_string_lossy(),
@@ -517,6 +542,78 @@ mod tests {
         let bytes = response.into_body().collect().await.unwrap().to_bytes();
         let json: Value = serde_json::from_slice(&bytes).unwrap();
         assert_eq!(json["error"]["code"], -32601);
+    }
+
+    #[tokio::test]
+    async fn mcp_http_accept_event_stream_still_returns_json() {
+        let app = test_router();
+        let body = serde_json::to_string(&json!({
+            "jsonrpc": "2.0",
+            "id": 10,
+            "method": "tools/list",
+            "params": {}
+        }))
+        .unwrap();
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/mcp")
+                    .header("content-type", "application/json")
+                    .header("accept", "text/event-stream")
+                    .body(Body::from(body))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        // Should still return application/json for now.
+        let ct = response
+            .headers()
+            .get("content-type")
+            .unwrap()
+            .to_str()
+            .unwrap();
+        assert!(
+            ct.contains("application/json"),
+            "Expected application/json content-type, got: {ct}"
+        );
+
+        let bytes = response.into_body().collect().await.unwrap().to_bytes();
+        let json: Value = serde_json::from_slice(&bytes).unwrap();
+        assert!(json["result"]["tools"].is_array());
+    }
+
+    #[tokio::test]
+    async fn mcp_http_invalid_request_missing_method() {
+        let app = test_router();
+        let body = serde_json::to_string(&json!({
+            "jsonrpc": "2.0",
+            "id": 11
+        }))
+        .unwrap();
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/mcp")
+                    .header("content-type", "application/json")
+                    .body(Body::from(body))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let bytes = response.into_body().collect().await.unwrap().to_bytes();
+        let json: Value = serde_json::from_slice(&bytes).unwrap();
+        assert_eq!(json["error"]["code"], -32600);
+        assert!(json["error"]["message"]
+            .as_str()
+            .unwrap()
+            .contains("method"));
     }
 
     // -----------------------------------------------------------------------
