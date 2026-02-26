@@ -306,6 +306,25 @@ impl Memory for SqliteMemory {
 }
 
 // ---------------------------------------------------------------------------
+// Cosine similarity
+// ---------------------------------------------------------------------------
+
+/// Compute cosine similarity between two f32 slices.
+/// Returns 0.0 for zero-length or zero-norm vectors.
+fn cosine_similarity(a: &[f32], b: &[f32]) -> f32 {
+    if a.len() != b.len() || a.is_empty() {
+        return 0.0;
+    }
+    let dot: f32 = a.iter().zip(b.iter()).map(|(x, y)| x * y).sum();
+    let norm_a: f32 = a.iter().map(|x| x * x).sum::<f32>().sqrt();
+    let norm_b: f32 = b.iter().map(|x| x * x).sum::<f32>().sqrt();
+    if norm_a == 0.0 || norm_b == 0.0 {
+        return 0.0;
+    }
+    dot / (norm_a * norm_b)
+}
+
+// ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
@@ -468,5 +487,25 @@ mod tests {
             entry.category,
             MemoryCategory::Custom("project-x".to_string())
         );
+    }
+
+    #[test]
+    fn cosine_identical() {
+        assert!((super::cosine_similarity(&[1.0, 0.0], &[1.0, 0.0]) - 1.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn cosine_orthogonal() {
+        assert!((super::cosine_similarity(&[1.0, 0.0], &[0.0, 1.0])).abs() < 1e-6);
+    }
+
+    #[test]
+    fn cosine_zero_vector() {
+        assert_eq!(super::cosine_similarity(&[0.0, 0.0], &[1.0, 1.0]), 0.0);
+    }
+
+    #[test]
+    fn cosine_empty() {
+        assert_eq!(super::cosine_similarity(&[], &[]), 0.0);
     }
 }
