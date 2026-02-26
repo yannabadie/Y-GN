@@ -1,6 +1,9 @@
 import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
 import { Dashboard } from "./pages/Dashboard";
 import { GuardLog } from "./pages/GuardLog";
+import { EvidenceViewer } from "./pages/EvidenceViewer";
+import { NodeRegistry } from "./pages/NodeRegistry";
+import { MemoryExplorer } from "./pages/MemoryExplorer";
 
 function App() {
   return (
@@ -40,9 +43,9 @@ function App() {
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/guard" element={<GuardLog />} />
-            <Route path="/evidence" element={<div className="p-6">Evidence Viewer (coming soon)</div>} />
-            <Route path="/nodes" element={<div className="p-6">Node Registry (coming soon)</div>} />
-            <Route path="/memory" element={<div className="p-6">Memory Explorer (coming soon)</div>} />
+            <Route path="/evidence" element={<EvidenceViewer />} />
+            <Route path="/nodes" element={<NodeRegistry />} />
+            <Route path="/memory" element={<MemoryExplorer />} />
           </Routes>
         </main>
       </div>
