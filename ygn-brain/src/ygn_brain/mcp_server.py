@@ -11,6 +11,8 @@ import json
 import sys
 from typing import Any
 
+from ygn_brain import __version__
+
 from .evidence import EvidencePack
 from .guard import GuardPipeline
 from .memory import InMemoryBackend, MemoryService
@@ -92,6 +94,19 @@ _TOOLS = [
             "required": ["query"],
         },
     },
+    {
+        "name": "orchestrate_refined",
+        "description": "Run refinement harness with multi-provider ensemble",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "task": {"type": "string", "description": "Task to refine"},
+                "max_rounds": {"type": "integer", "description": "Max refinement rounds"},
+                "ensemble": {"type": "boolean", "description": "Use multi-provider ensemble"},
+            },
+            "required": ["task"],
+        },
+    },
 ]
 
 _JSONRPC_PARSE_ERROR = -32700
@@ -161,7 +176,7 @@ class McpBrainServer:
                 "capabilities": {"tools": {"listChanged": False}},
                 "serverInfo": {
                     "name": "ygn-brain",
-                    "version": "0.3.0",
+                    "version": __version__,
                 },
             },
         )
@@ -186,6 +201,8 @@ class McpBrainServer:
                 return _result_response(req_id, self._call_memory_recall(arguments))
             if tool_name == "memory_search_semantic":
                 return _result_response(req_id, self._call_memory_search_semantic(arguments))
+            if tool_name == "orchestrate_refined":
+                return _result_response(req_id, await self._call_orchestrate_refined(arguments))
             return _error_response(req_id, _JSONRPC_METHOD_NOT_FOUND, f"Unknown tool: {tool_name}")
         except Exception as exc:  # noqa: BLE001
             return _error_response(req_id, _JSONRPC_INTERNAL_ERROR, str(exc))
@@ -276,6 +293,36 @@ class McpBrainServer:
             "results": entries,
             "count": len(entries),
             "mode": mode,
+        }
+
+    async def _call_orchestrate_refined(self, args: dict[str, Any]) -> dict[str, Any]:
+        from ygn_brain.harness import (
+            ConsensusSelector,
+            DefaultPolicy,
+            HarnessConfig,
+            RefinementHarness,
+            StubCandidateGenerator,
+            TextVerifier,
+        )
+
+        task = args.get("task", "")
+        max_rounds = args.get("max_rounds", 3)
+        ensemble = args.get("ensemble", False)
+
+        harness = RefinementHarness(
+            generator=StubCandidateGenerator(output=f"Refined response for: {task}"),
+            verifier=TextVerifier(),
+            policy=DefaultPolicy(max_rounds=max_rounds, min_score=0.5),
+            selector=ConsensusSelector(),
+        )
+        providers = ["gemini", "codex"] if ensemble else ["stub"]
+        config = HarnessConfig(providers=providers, max_rounds=max_rounds, ensemble=ensemble)
+        result = await harness.run(task, config)
+        return {
+            "winner": result.winner.output,
+            "score": result.feedback.score,
+            "rounds": result.rounds_used,
+            "candidates": result.total_candidates,
         }
 
     async def run_stdio(self) -> None:

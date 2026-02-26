@@ -28,16 +28,16 @@ async def test_brain_mcp_initialize(server: McpBrainServer):
     assert resp["id"] == 1
     result = resp["result"]
     assert result["serverInfo"]["name"] == "ygn-brain"
-    assert result["serverInfo"]["version"] == "0.3.0"
+    assert result["serverInfo"]["version"] == "0.5.0"
     assert "tools" in result["capabilities"]
 
 
 @pytest.mark.asyncio
 async def test_brain_mcp_tools_list(server: McpBrainServer):
-    """Lists all 6 tools with correct schemas."""
+    """Lists all 7 tools with correct schemas."""
     resp = json.loads(await server.handle_message(_req("tools/list")))
     tools = resp["result"]["tools"]
-    assert len(tools) == 6
+    assert len(tools) == 7
     names = {t["name"] for t in tools}
     expected = {
         "orchestrate",
@@ -46,6 +46,7 @@ async def test_brain_mcp_tools_list(server: McpBrainServer):
         "swarm_execute",
         "memory_recall",
         "memory_search_semantic",
+        "orchestrate_refined",
     }
     assert names == expected
     # Each tool has inputSchema
@@ -145,3 +146,26 @@ async def test_brain_mcp_memory_semantic(server: McpBrainServer):
     assert "results" in result
     assert "count" in result
     assert result["mode"] in ("semantic", "bm25")
+
+
+@pytest.mark.asyncio
+async def test_brain_mcp_orchestrate_refined(server: McpBrainServer):
+    """Calls orchestrate_refined tool, gets refinement result."""
+    resp = json.loads(
+        await server.handle_message(
+            _req(
+                "tools/call",
+                {
+                    "name": "orchestrate_refined",
+                    "arguments": {"task": "Summarize quantum computing"},
+                },
+            )
+        )
+    )
+    result = resp["result"]
+    assert "winner" in result
+    assert "score" in result
+    assert "rounds" in result
+    assert "candidates" in result
+    assert result["rounds"] >= 1
+    assert result["candidates"] >= 1

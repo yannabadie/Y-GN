@@ -6,8 +6,15 @@ from ygn_brain.harness.types import Candidate, Feedback
 
 
 def _c(cid: str, provider: str, output: str) -> Candidate:
-    return Candidate(id=cid, provider=provider, model="m", prompt="p",
-                     output=output, latency_ms=100, token_count=10)
+    return Candidate(
+        id=cid,
+        provider=provider,
+        model="m",
+        prompt="p",
+        output=output,
+        latency_ms=100,
+        token_count=10,
+    )
 
 
 def _f(score: float, passed: bool = True) -> Feedback:

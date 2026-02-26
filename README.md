@@ -1,6 +1,6 @@
 # Y-GN (Yggdrasil-Grid Nexus)
 
-**v0.2.1** — A distributed multi-agent runtime that separates reasoning from execution.
+**v0.5.0** — A distributed multi-agent runtime that separates reasoning from execution.
 
 ## Architecture
 
@@ -125,13 +125,13 @@ Y-GN/
   LICENSE            Apache-2.0
 ```
 
-## Test Counts (2026-02-25)
+## Test Counts (2026-02-26)
 
 | Component | Tests |
 |-----------|-------|
-| ygn-core (Rust) | 336 |
-| ygn-brain (Python) | 299+ |
-| **Total** | **635+** |
+| ygn-core (Rust) | 373 |
+| ygn-brain (Python) | 442 |
+| **Total** | **815** |
 
 ## License
 

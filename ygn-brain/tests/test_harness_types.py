@@ -11,9 +11,13 @@ from ygn_brain.harness.types import (
 
 def test_candidate_dataclass():
     c = Candidate(
-        id="c1", provider="codex", model="gpt-5.2-codex",
-        prompt="solve X", output="answer Y",
-        latency_ms=150.0, token_count=42,
+        id="c1",
+        provider="codex",
+        model="gpt-5.2-codex",
+        prompt="solve X",
+        output="answer Y",
+        latency_ms=150.0,
+        token_count=42,
     )
     assert c.provider == "codex"
     assert c.latency_ms == 150.0
@@ -41,8 +45,9 @@ def test_poetiq_preset():
 
 
 def test_harness_result():
-    c = Candidate(id="c1", provider="codex", model="m", prompt="p",
-                  output="o", latency_ms=0, token_count=0)
+    c = Candidate(
+        id="c1", provider="codex", model="m", prompt="p", output="o", latency_ms=0, token_count=0
+    )
     f = Feedback(passed=True, score=0.9, diagnostics="ok", artifacts={})
     r = HarnessResult(winner=c, feedback=f, rounds_used=2, total_candidates=4)
     assert r.rounds_used == 2

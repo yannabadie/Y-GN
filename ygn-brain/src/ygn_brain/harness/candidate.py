@@ -94,8 +94,7 @@ class MultiProviderGenerator(CandidateGenerator):
                     total_tokens = 0
                     if response.usage is not None:
                         total_tokens = (
-                            response.usage.prompt_tokens
-                            + response.usage.completion_tokens
+                            response.usage.prompt_tokens + response.usage.completion_tokens
                         )
                     candidates.append(
                         Candidate(

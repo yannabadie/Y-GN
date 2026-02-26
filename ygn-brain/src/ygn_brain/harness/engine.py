@@ -81,9 +81,7 @@ class RefinementHarness:
         round_num = 0
 
         # Step 2 -- loop: generate -> verify -> track best -> check policy
-        while self._policy.should_continue(
-            round_num, best_score, [f for _, f in all_candidates]
-        ):
+        while self._policy.should_continue(round_num, best_score, [f for _, f in all_candidates]):
             candidates = await self._generator.generate(current_task, context, config)
 
             for candidate in candidates:
@@ -98,9 +96,9 @@ class RefinementHarness:
                             "round": round_num,
                             "candidate_id": candidate.id,
                             "provider": candidate.provider,
-                            "output_hash": hashlib.sha256(
-                                candidate.output.encode()
-                            ).hexdigest()[:16],
+                            "output_hash": hashlib.sha256(candidate.output.encode()).hexdigest()[
+                                :16
+                            ],
                             "score": feedback.score,
                             "passed": feedback.passed,
                         },
@@ -112,9 +110,7 @@ class RefinementHarness:
             round_num += 1
 
             # Step 3 -- if policy says continue, refine using worst feedback
-            if self._policy.should_continue(
-                round_num, best_score, [f for _, f in all_candidates]
-            ):
+            if self._policy.should_continue(round_num, best_score, [f for _, f in all_candidates]):
                 worst = min(all_candidates, key=lambda x: x[1].score)
                 current_task = self._policy.refine_prompt(task, worst[1])
 

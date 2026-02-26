@@ -8,8 +8,13 @@ from ygn_brain.harness.verifier import CommandVerifier, TextVerifier, Verifier
 
 def _make_candidate(output: str) -> Candidate:
     return Candidate(
-        id="c1", provider="stub", model="stub",
-        prompt="test", output=output, latency_ms=0, token_count=0,
+        id="c1",
+        provider="stub",
+        model="stub",
+        prompt="test",
+        output=output,
+        latency_ms=0,
+        token_count=0,
     )
 
 

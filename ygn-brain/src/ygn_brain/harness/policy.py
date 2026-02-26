@@ -11,9 +11,7 @@ class RefinementPolicy(ABC):
     """Controls when to stop refining and how to adjust prompts."""
 
     @abstractmethod
-    def should_continue(
-        self, round_num: int, best_score: float, history: list[Feedback]
-    ) -> bool:
+    def should_continue(self, round_num: int, best_score: float, history: list[Feedback]) -> bool:
         """Return True if another refinement round should run."""
 
     @abstractmethod
@@ -28,9 +26,7 @@ class DefaultPolicy(RefinementPolicy):
         self._max_rounds = max_rounds
         self._min_score = min_score
 
-    def should_continue(
-        self, round_num: int, best_score: float, history: list[Feedback]
-    ) -> bool:
+    def should_continue(self, round_num: int, best_score: float, history: list[Feedback]) -> bool:
         return round_num < self._max_rounds and best_score < self._min_score
 
     def refine_prompt(self, task: str, feedback: Feedback) -> str:

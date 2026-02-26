@@ -57,9 +57,7 @@ async def test_engine_stops_when_score_reached():
 async def test_engine_traces_to_evidence():
     evidence = EvidencePack(session_id="harness-test")
     harness = RefinementHarness(
-        generator=StubCandidateGenerator(
-            output="A complete analysis with details and structure."
-        ),
+        generator=StubCandidateGenerator(output="A complete analysis with details and structure."),
         verifier=TextVerifier(),
         policy=DefaultPolicy(max_rounds=1, min_score=0.5),
         selector=ConsensusSelector(),
