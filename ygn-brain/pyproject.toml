@@ -23,6 +23,11 @@ dev = [
     "ruff>=0.8",
     "mypy>=1.13",
 ]
+ml = [
+    "sentence-transformers>=3.0.0",
+    "onnxruntime>=1.18.0",
+    "transformers>=4.40.0",
+]
 
 [project.scripts]
 ygn-brain-repl = "ygn_brain.repl:main"

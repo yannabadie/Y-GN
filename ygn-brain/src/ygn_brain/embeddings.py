@@ -70,3 +70,45 @@ class OllamaEmbeddingService(EmbeddingService):
 
     def dimension(self) -> int:
         return self._dim
+
+
+# Dimensions for known models
+_MODEL_DIMENSIONS: dict[str, int] = {
+    "all-MiniLM-L6-v2": 384,
+    "all-mpnet-base-v2": 768,
+    "nomic-embed-text": 768,
+}
+
+
+class LocalEmbeddingService(EmbeddingService):
+    """Embedding via sentence-transformers (local CPU inference).
+
+    Requires: pip install 'ygn-brain[ml]'
+    """
+
+    def __init__(self, model_name: str = "all-MiniLM-L6-v2") -> None:
+        self._model_name = model_name
+        self._dim = _MODEL_DIMENSIONS.get(model_name, 384)
+        self._model = None  # lazy load
+
+    def _load_model(self):
+        if self._model is None:
+            try:
+                from sentence_transformers import SentenceTransformer
+            except ImportError as e:
+                raise ImportError(
+                    "sentence-transformers required. Install with: "
+                    "pip install 'ygn-brain[ml]'"
+                ) from e
+            self._model = SentenceTransformer(self._model_name)
+            self._dim = self._model.get_sentence_embedding_dimension()
+
+    def embed(self, texts: list[str]) -> list[list[float]]:
+        if not texts:
+            return []
+        self._load_model()
+        embeddings = self._model.encode(texts, convert_to_numpy=True)
+        return [row.tolist() for row in embeddings]
+
+    def dimension(self) -> int:
+        return self._dim

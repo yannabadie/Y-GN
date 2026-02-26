@@ -71,3 +71,17 @@ def test_ollama_embedding_dimension():
 
     svc = OllamaEmbeddingService(model="nomic-embed-text", dimension=768)
     assert svc.dimension() == 768
+
+
+def test_local_embedding_service_importable():
+    """LocalEmbeddingService can be imported."""
+    from ygn_brain.embeddings import LocalEmbeddingService
+
+    assert issubclass(LocalEmbeddingService, EmbeddingService)
+
+
+def test_local_embedding_service_dimension():
+    from ygn_brain.embeddings import LocalEmbeddingService
+
+    svc = LocalEmbeddingService(model_name="all-MiniLM-L6-v2")
+    assert svc.dimension() == 384
