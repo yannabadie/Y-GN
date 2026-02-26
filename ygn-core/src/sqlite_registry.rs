@@ -49,6 +49,19 @@ impl SqliteRegistry {
             conn: Mutex::new(conn),
         })
     }
+
+    /// Remove nodes whose last_seen is older than max_staleness_seconds.
+    /// Returns the number of evicted nodes.
+    pub async fn evict_stale(&self, max_staleness_seconds: u64) -> anyhow::Result<usize> {
+        let cutoff = Utc::now() - chrono::Duration::seconds(max_staleness_seconds as i64);
+        let cutoff_str = cutoff.to_rfc3339();
+        let conn = self.conn.lock().unwrap();
+        let count = conn.execute(
+            "DELETE FROM nodes WHERE last_seen < ?1",
+            rusqlite::params![cutoff_str],
+        )?;
+        Ok(count)
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -370,5 +383,25 @@ mod tests {
 
         let found = reg.get("node-1").await.unwrap().unwrap();
         assert_eq!(found.capabilities, vec!["new".to_string()]);
+    }
+
+    #[tokio::test]
+    async fn evict_stale_nodes() {
+        let reg = SqliteRegistry::new(":memory:").unwrap();
+
+        // Create a stale node (last_seen 10 minutes ago)
+        let mut stale = sample_node("stale-1");
+        stale.last_seen = Utc::now() - chrono::Duration::seconds(600);
+        reg.register(stale).await.unwrap();
+
+        // Create a fresh node
+        reg.register(sample_node("fresh-1")).await.unwrap();
+
+        // Evict nodes older than 5 minutes
+        let evicted = reg.evict_stale(300).await.unwrap();
+        assert_eq!(evicted, 1);
+
+        assert!(reg.get("stale-1").await.unwrap().is_none());
+        assert!(reg.get("fresh-1").await.unwrap().is_some());
     }
 }
