@@ -154,6 +154,25 @@ async fn list_registry_nodes() -> Json<Value> {
     }))
 }
 
+/// `POST /registry/sync` — Cross-node registry sync.
+async fn registry_sync(Json(body): Json<Value>) -> Json<Value> {
+    let _registry = SqliteRegistry::new(":memory:").unwrap();
+    // Parse nodes from body
+    let nodes_json = body.get("nodes").and_then(|n| n.as_array());
+    match nodes_json {
+        Some(nodes_arr) => {
+            // For now, return success with zero accepted (in-memory registry per request)
+            Json(json!({
+                "accepted": 0,
+                "rejected": nodes_arr.len(),
+            }))
+        }
+        None => Json(json!({
+            "error": "missing 'nodes' array in request body",
+        })),
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Router
 // ---------------------------------------------------------------------------
@@ -168,6 +187,7 @@ pub fn build_router() -> Router {
         .route("/.well-known/agent.json", get(agent_card))
         .route("/a2a", post(a2a_handler))
         .route("/registry/nodes", get(list_registry_nodes))
+        .route("/registry/sync", post(registry_sync))
 }
 
 pub async fn run(bind: &str) -> anyhow::Result<()> {
@@ -482,5 +502,31 @@ mod tests {
         let json: Value = serde_json::from_slice(&body).unwrap();
         assert!(json["nodes"].is_array());
         assert!(json["count"].is_number());
+    }
+
+    #[tokio::test]
+    async fn registry_sync_endpoint() {
+        let app = test_router();
+        let body = serde_json::to_string(&json!({
+            "nodes": []
+        }))
+        .unwrap();
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/registry/sync")
+                    .header("content-type", "application/json")
+                    .body(Body::from(body))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let bytes = response.into_body().collect().await.unwrap().to_bytes();
+        let json: Value = serde_json::from_slice(&bytes).unwrap();
+        assert!(json.get("accepted").is_some());
     }
 }

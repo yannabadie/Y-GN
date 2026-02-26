@@ -62,6 +62,54 @@ impl SqliteRegistry {
         )?;
         Ok(count)
     }
+
+    /// Merge remote nodes into this registry.
+    /// Accepts nodes only if they are newer (by last_seen) than existing entries.
+    /// Returns (accepted_count, rejected_count).
+    pub async fn merge_nodes(&self, nodes: &[NodeInfo]) -> anyhow::Result<(usize, usize)> {
+        let mut accepted = 0;
+        let mut rejected = 0;
+        let conn = self.conn.lock().unwrap();
+
+        for node in nodes {
+            // Check if node already exists
+            let existing_last_seen: Option<String> = conn
+                .query_row(
+                    "SELECT last_seen FROM nodes WHERE node_id = ?1",
+                    rusqlite::params![node.node_id],
+                    |row| row.get(0),
+                )
+                .ok();
+
+            let should_accept = match existing_last_seen {
+                None => true, // New node, accept
+                Some(existing) => {
+                    // Accept if incoming is newer
+                    node.last_seen.to_rfc3339() > existing
+                }
+            };
+
+            if should_accept {
+                // INSERT OR REPLACE (same as register)
+                let endpoints_json = serde_json::to_string(&node.endpoints)?;
+                let capabilities_json = serde_json::to_string(&node.capabilities)?;
+                let last_seen_str = node.last_seen.to_rfc3339();
+                let metadata_str = node.metadata.to_string();
+                let role_str = role_to_str(&node.role);
+                let trust_str = trust_to_str(&node.trust_tier);
+
+                conn.execute(
+                    "INSERT OR REPLACE INTO nodes (node_id, role, trust_tier, endpoints, capabilities, last_seen, metadata) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+                    rusqlite::params![node.node_id, role_str, trust_str, endpoints_json, capabilities_json, last_seen_str, metadata_str],
+                )?;
+                accepted += 1;
+            } else {
+                rejected += 1;
+            }
+        }
+
+        Ok((accepted, rejected))
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -403,5 +451,35 @@ mod tests {
 
         assert!(reg.get("stale-1").await.unwrap().is_none());
         assert!(reg.get("fresh-1").await.unwrap().is_some());
+    }
+
+    #[tokio::test]
+    async fn merge_remote_nodes() {
+        let reg = SqliteRegistry::new(":memory:").unwrap();
+        let nodes = vec![sample_node("remote-1"), sample_node("remote-2")];
+        let (accepted, rejected) = reg.merge_nodes(&nodes).await.unwrap();
+        assert_eq!(accepted, 2);
+        assert_eq!(rejected, 0);
+
+        let filter = DiscoveryFilter {
+            role: None,
+            trust_tier: None,
+            capability: None,
+            max_staleness_seconds: None,
+        };
+        let all = reg.discover(filter).await.unwrap();
+        assert_eq!(all.len(), 2);
+    }
+
+    #[tokio::test]
+    async fn merge_skips_older_nodes() {
+        let reg = SqliteRegistry::new(":memory:").unwrap();
+        reg.register(sample_node("node-1")).await.unwrap();
+
+        let mut old = sample_node("node-1");
+        old.last_seen = Utc::now() - chrono::Duration::seconds(100);
+        let (accepted, rejected) = reg.merge_nodes(&[old]).await.unwrap();
+        assert_eq!(accepted, 0);
+        assert_eq!(rejected, 1);
     }
 }
