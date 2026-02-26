@@ -125,6 +125,13 @@
 - [FIXED] EvidenceEntry.kind accepted arbitrary strings
 - [FIXED] No timeout on HiveMind LLM phases (Gemini hangs on 3rd call)
 
+### v0.4.0 — Observable Governance (2026-02-26)
+- [x] Section 1: Vector Embeddings — EmbeddingService ABC, Stub/Ollama/Local backends, cosine similarity, TieredMemory integration, Rust hybrid recall
+- [x] Section 2: Persistent Registry — SqliteRegistry, heartbeat eviction, cross-node sync, /registry/nodes API
+- [x] Section 3: ML Guard — OnnxClassifierGuard, OllamaClassifierGuard, pipeline fast-path, GuardStats, benchmark suite
+- [x] Section 4: Governance Dashboard — ygn-dash Tauri app with 5 pages (Dashboard, GuardLog, Evidence, Nodes, Memory)
+- [x] 35 new Python tests + 23 new Rust tests
+
 ### v0.3.0 — Compliance, Security, Interoperability (2026-02-25)
 - [x] A1: Evidence Pack Crypto — SHA-256 hash chain, ed25519 signing, RFC 6962 Merkle tree (EU AI Act Art. 12)
 - [x] A3: Guard v2 — GuardBackend ABC, RegexGuard rename, ToolInvocationGuard (whitelist + rate limit + Log-To-Leak), scoring, ClassifierGuard stub
@@ -139,5 +146,5 @@
 
 ## Summary
 
-All milestones M0–M8 + Post-MVP + v0.3.0 complete. **v0.3.0 released 2026-02-25.**
-Total: **344 Rust tests + 336 Python tests = 680 tests**, all green.
+All milestones M0–M8 + Post-MVP + v0.4.0 complete. **v0.4.0 released 2026-02-26.**
+Total: **367 Rust tests + 371 Python tests = 738 tests**, all green.

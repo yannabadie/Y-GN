@@ -26,3 +26,8 @@
 | 2026-02-25 | v0.3.0: Brain MCP server — stdio only for v1 | 5 tools exposed (orchestrate, guard_check, evidence_export, swarm_execute, memory_recall). HTTP deferred to Core gateway proxy. Brain now bidirectional: client + server. |
 | 2026-02-25 | v0.3.0: MCP handle_jsonrpc() refactor for HTTP reuse | Extracted reusable Value→Value handler from stdio loop. Both stdio and POST /mcp use same handler. SSE streaming deferred. |
 | 2026-02-25 | v0.3.0: A2A subset implementation | Agent Card at /.well-known/agent.json + SendMessage/GetTask/ListTasks. Minimal viable A2A for agent discovery and interop. Full spec deferred. |
+| 2026-02-26 | v0.4.0: Bottom-up approach (embeddings→registry→guard→dashboard) | Infrastructure first enables higher layers. Embeddings needed by both memory and guard. |
+| 2026-02-26 | EmbeddingService: dual backend (sentence-transformers + Ollama) | sentence-transformers for offline/air-gapped, Ollama for users already running it. ABC makes both pluggable. |
+| 2026-02-26 | ML Guard: ONNX + Ollama, stub for CI | ONNX for fast local inference (5-15ms), Ollama for simpler setup. Stub mode allows CI without model downloads. |
+| 2026-02-26 | ygn-dash: Tauri 2 + React (same stack as opcode) | Reuse Yann's opcode expertise. Read-only consumer of ygn-core data. |
+| 2026-02-26 | SqliteRegistry: eventual consistency via merge_nodes() | No Raft/etcd. Last-writer-wins on last_seen. Acceptable for discovery, not authorization. |

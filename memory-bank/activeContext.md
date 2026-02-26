@@ -2,27 +2,14 @@
 
 ## Current Focus
 
-- [2026-02-25] v0.3.0 release: Compliance, Security, Interoperability
-- EU AI Act Art. 12 (evidence crypto) + Art. 9 (adversarial testing) compliance
-- Brain↔Core MCP bidirectional: Brain is now both client AND server
-- A2A protocol support for agent interoperability
+- [2026-02-26] v0.4.0 release: Observable Governance
+- Vector embeddings (sentence-transformers + Ollama), persistent registry, ML guard, Tauri dashboard
 
-## Completed Today (2026-02-25)
+## Test Counts (2026-02-26)
 
-### v0.3.0 — 7 phases implemented
-- A1: Evidence Pack Crypto — hash chain + ed25519 signing + Merkle tree
-- A3: Guard v2 — GuardBackend ABC, scoring, ToolInvocationGuard, ClassifierGuard stub
-- B3: Red/Blue Executor — template attacks (sync) + LLM adversarial (async)
-- B1: Brain MCP Server — 5 tools over stdio JSON-RPC 2.0
-- A2: Wassette Sandbox — policy mapping, availability check, fallback
-- A4: MCP Streamable HTTP — handle_jsonrpc() refactor, POST /mcp route
-- B2: A2A Agent Cards — /.well-known/agent.json + POST /a2a
-
-## Test Counts (2026-02-25)
-
-- Rust: 344 tests (336 + 8 new from wassette/a2a/gateway)
-- Python: 336 tests (313 + 23 new from evidence/guard/swarm/mcp_server)
-- Total: 680
+- Rust: 367 tests
+- Python: 371 tests
+- Total: 738
 
 ## Known Gaps (Documented)
 

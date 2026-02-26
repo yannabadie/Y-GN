@@ -3,6 +3,46 @@
 All notable changes to Y-GN (Yggdrasil-Grid Nexus) are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.4.0] — 2026-02-26
+
+### Added
+
+#### Section 1: Vector Embeddings
+- `EmbeddingService` ABC with `embed()` and `dimension()` abstract methods
+- `StubEmbeddingService` for testing without ML dependencies
+- `OllamaEmbeddingService` — embeddings via Ollama `/api/embeddings` endpoint
+- `LocalEmbeddingService` — local CPU inference via sentence-transformers (all-MiniLM-L6-v2)
+- `cosine_similarity()` function (Python + Rust)
+- TieredMemoryService now accepts optional `EmbeddingService` for semantic recall
+- Rust `SqliteMemory` — `embedding BLOB` column, `store_with_embedding()`, `recall_with_embedding()` with hybrid BM25+cosine ranking (0.7/0.3 weighting)
+- `memory_search_semantic` MCP tool in Brain server
+
+#### Section 2: Persistent Registry
+- `SqliteRegistry` — SQLite-backed `NodeRegistry` implementation with WAL mode
+- Background heartbeat eviction (`evict_stale()`)
+- Cross-node registry sync (`merge_nodes()`, `POST /registry/sync`)
+- `GET /registry/nodes` API endpoint
+- Dynamic Agent Card version from `CARGO_PKG_VERSION`
+
+#### Section 3: ML-Based Guard
+- `OnnxClassifierGuard` — ONNX Runtime inference with stub mode for CI
+- `OllamaClassifierGuard` — Ollama chat completion with classification prompt
+- GuardPipeline integration: regex fast-path (skip ML when regex blocks)
+- `GuardStats` — guard check statistics tracking
+- Guard benchmark suite: regex catches 5/10 attack templates (50% coverage)
+
+#### Section 4: Governance Dashboard (ygn-dash)
+- New Tauri 2 + React + TypeScript + Tailwind CSS v4 desktop app
+- Dashboard page: status cards, provider health grid
+- Guard Log page: filterable timeline with threat level badges
+- Evidence Viewer page: session browser + hash chain visualization
+- Node Registry page: node table with role filter
+- Memory Explorer page: tier distribution chart + BM25/semantic search toggle
+
+### Dependencies
+- Python optional: `sentence-transformers>=3.0.0`, `onnxruntime>=1.18.0`, `transformers>=4.40.0` (under `[ml]` extra)
+- Dashboard: Tauri 2, React 19, react-router-dom 6, Recharts 3, Tailwind CSS v4
+
 ## [0.3.0] - 2026-02-25
 
 Compliance, Security, Interoperability — EU AI Act readiness, guard v2,

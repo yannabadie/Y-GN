@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Current version: v0.3.0**
+**Current version: v0.4.0**
 
 Y-GN (Yggdrasil-Grid Nexus) is a distributed multi-agent runtime that separates **reasoning** from **execution**:
 
@@ -70,11 +70,13 @@ ygn-brain-repl                 # Interactive REPL
 - `POST /mcp` — MCP over HTTP (JSON-RPC 2.0, Streamable HTTP transport)
 - `GET /.well-known/agent.json` — A2A Agent Card discovery
 - `POST /a2a` — A2A message handler (SendMessage, GetTask, ListTasks)
+- `GET /registry/nodes` — List registered nodes
+- `POST /registry/sync` — Cross-node registry sync
 
 ### Test counts
-- Rust (ygn-core): 344 tests
-- Python (ygn-brain): 336 tests
-- Total: 680 tests
+- Rust (ygn-core): 367 tests
+- Python (ygn-brain): 371 tests
+- Total: 738 tests
 
 ## Architecture
 
@@ -127,6 +129,10 @@ Key Python modules:
 - `guard_backends.py` — ClassifierGuard ABC, StubClassifierGuard
 - `swarm.py` — RedBlueExecutor (template + LLM adversarial testing)
 - `mcp_server.py` — Brain MCP server (5 tools: orchestrate, guard_check, evidence_export, swarm_execute, memory_recall)
+- `embeddings.py` — EmbeddingService ABC, StubEmbeddingService, LocalEmbeddingService, OllamaEmbeddingService
+- `cosine.py` — cosine_similarity for embedding vectors
+- `guard_ml.py` — OnnxClassifierGuard, OllamaClassifierGuard (ML-based prompt injection detection)
+- `guard_stats.py` — GuardStats tracking for guard check statistics
 
 ### ygn-core internals
 Trait-based subsystems: `providers`, `channels`, `tools`, `memory`, `security`, `runtime`. Key components:
@@ -143,6 +149,8 @@ Trait-based subsystems: `providers`, `channels`, `tools`, `memory`, `security`, 
 - **Hot** — semantic/TTL cache for recent interactions
 - **Warm** — temporal index + hierarchical tags (SwiftMem-inspired)
 - **Cold** — Temporal Knowledge Graph (Zep/Graphiti-inspired) + doc store; HippoRAG mode (KG + Personalized PageRank) for multi-hop reasoning. **Note:** `relations` table is declared but never populated; search uses word-overlap scoring, not vector embeddings
+
+Vector embeddings support via EmbeddingService (sentence-transformers or Ollama). SqliteMemory supports hybrid BM25+cosine recall.
 
 ### Security model ("multi-wall")
 WASM/WASI sandbox (process-level + optional Wassette) → OS sandbox (Landlock types exist but `apply_linux()` is a stub — not enforced) → action allowlists/RBAC → GuardPipeline v2 (RegexGuard + ToolInvocationGuard + ClassifierGuard stubs) → runtime behavior analysis (HeteroGAT-Rank) → Red/Blue adversarial testing (EU AI Act Art. 9) → approval gates for HIGH-RISK actions.
@@ -180,7 +188,7 @@ Always read these files at session start. Update them when significant changes o
 
 M0 (Bootstrap) → M1 (Core usable) → M2 (Brain usable) → M3 (Brain↔Core integration) → M4 (Secure sandbox) → M5 (Memory v1) → M6 (IoA distributed) → M7 (Self-healing) → M8 (Release) → Post-MVP (Multi-Provider LLM)
 
-All milestones complete (current release: v0.3.0). The ROADMAP.md YAML block is the authoritative source for epic/task details and acceptance criteria.
+All milestones complete (current release: v0.4.0). The ROADMAP.md YAML block is the authoritative source for epic/task details and acceptance criteria.
 
 ## Key Constraints
 
