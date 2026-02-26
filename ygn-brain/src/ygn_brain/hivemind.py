@@ -19,11 +19,27 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class PhaseResult:
-    """Output from a single pipeline phase."""
+    """Output from a single pipeline phase.
+
+    Attributes:
+        phase: Name of the pipeline phase (e.g. "diagnosis", "execution").
+        data: Structured data produced by the phase.
+        confidence: Confidence score for the phase output (0.0-1.0).
+        status: Phase outcome — "ok", "timeout", "error", or "skipped".
+        output: Human-readable summary of the phase output.
+        latency_ms: Wall-clock time spent in this phase, in milliseconds.
+    """
 
     phase: str
-    data: dict[str, Any]
-    confidence: float
+    data: dict[str, Any] = None  # type: ignore[assignment]
+    confidence: float = 1.0
+    status: str = "ok"  # "ok" | "timeout" | "error" | "skipped"
+    output: str = ""
+    latency_ms: float = 0.0
+
+    def __post_init__(self) -> None:
+        if self.data is None:
+            self.data = {}
 
 
 class HiveMindPipeline:
