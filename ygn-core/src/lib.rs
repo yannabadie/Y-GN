@@ -22,6 +22,7 @@ pub mod sandbox;
 pub mod security;
 pub mod skills;
 pub mod sqlite_memory;
+pub mod sqlite_registry;
 pub mod telegram;
 pub mod telemetry;
 pub mod tool;
