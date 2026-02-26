@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"
 
 from .codex_provider import CodexCliError, CodexCliProvider
 from .context import ContextBuilder, ExecutionContext
@@ -16,6 +16,7 @@ from .embeddings import (
     OllamaEmbeddingService,
     StubEmbeddingService,
 )
+from .entity_extraction import EntityExtractor, RegexEntityExtractor, StubEntityExtractor
 from .event_sourcing import EventStore, FSMEvent, InMemoryEventStore
 from .evidence import EvidenceEntry, EvidenceKind, EvidencePack
 from .evolution import (
@@ -39,6 +40,7 @@ from .guard import (
     ToolInvocationGuard,
 )
 from .guard_backends import ClassifierGuard, StubClassifierGuard
+from .guard_download import ensure_model_dir, get_model_dir
 from .guard_ml import OllamaClassifierGuard, OnnxClassifierGuard
 from .guard_stats import GuardStats
 from .hivemind import HiveMindPipeline, PhaseResult
@@ -128,6 +130,8 @@ __all__ = [
     "DistributedSwarmEngine",
     "DyLANTracker",
     "EmbeddingService",
+    "ensure_model_dir",
+    "EntityExtractor",
     "EventStore",
     "EvolutionEngine",
     "EvolutionProposal",
@@ -145,6 +149,7 @@ __all__ = [
     "GateCheckResult",
     "GeminiCliError",
     "GeminiCliProvider",
+    "get_model_dir",
     "GuardBackend",
     "GuardPipeline",
     "GuardResult",
@@ -156,6 +161,7 @@ __all__ = [
     "InputGuard",
     "ClassifierGuard",
     "StubClassifierGuard",
+    "StubEntityExtractor",
     "RegexGuard",
     "ToolInvocationGuard",
     "LocalEmbeddingService",
@@ -174,6 +180,7 @@ __all__ = [
     "Orchestrator",
     "ParallelExecutor",
     "RedBlueExecutor",
+    "RegexEntityExtractor",
     "PersonalityRegistry",
     "PersonalityTrait",
     "Phase",

@@ -37,8 +37,7 @@ def download_prompt_guard(model_dir: str | None = None) -> str:
         from transformers import AutoTokenizer
     except ImportError as e:
         raise ImportError(
-            "optimum and transformers required. "
-            "Install with: pip install 'ygn-brain[ml]'"
+            "optimum and transformers required. Install with: pip install 'ygn-brain[ml]'"
         ) from e
 
     print(f"Downloading PromptGuard-86M to {target}...")  # noqa: T201

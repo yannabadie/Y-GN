@@ -31,3 +31,8 @@
 | 2026-02-26 | ML Guard: ONNX + Ollama, stub for CI | ONNX for fast local inference (5-15ms), Ollama for simpler setup. Stub mode allows CI without model downloads. |
 | 2026-02-26 | ygn-dash: Tauri 2 + React (same stack as opcode) | Reuse Yann's opcode expertise. Read-only consumer of ygn-core data. |
 | 2026-02-26 | SqliteRegistry: eventual consistency via merge_nodes() | No Raft/etcd. Last-writer-wins on last_seen. Acceptable for discovery, not authorization. |
+| 2026-02-26 | v0.5.0: Guard model download as separate CLI | PromptGuard-86M (~330MB) not bundled. Explicit `ygn-brain-guard-download` CLI avoids bloating pip install. Model cached in `~/.ygn/models/`. |
+| 2026-02-26 | v0.5.0: EntityExtractor ABC for Temporal KG | Decoupled extraction from storage. RegexEntityExtractor for regex-based entity recognition. StubEntityExtractor for tests. Future: LLM-based extraction. |
+| 2026-02-26 | v0.5.0: SqliteTaskStore replaces in-memory A2A task store | In-memory task store lost tasks between requests. SQLite with WAL mode provides persistence. Same pattern as SqliteRegistry. |
+| 2026-02-26 | v0.5.0: Dashboard wired to live API, not mock data | All 5 dashboard pages now fetch from ygn-core gateway. Auto-refresh every 10s. Connection indicator in sidebar. |
+| 2026-02-26 | v0.5.0: 14 TDD tasks across 2 parallel tracks | Track A (Python/Brain hardening) + Track B (Rust/Dashboard wiring). TDD mandatory throughout. E2E golden path as integration gate. |

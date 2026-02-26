@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ygn-brain"
-version = "0.4.0"
+version = "0.5.0"
 description = "Y-GN cognitive control-plane: orchestration, multi-agent swarm, evidence packs"
 requires-python = ">=3.11"
 license = "Apache-2.0"

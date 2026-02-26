@@ -125,6 +125,18 @@
 - [FIXED] EvidenceEntry.kind accepted arbitrary strings
 - [FIXED] No timeout on HiveMind LLM phases (Gemini hangs on 3rd call)
 
+### v0.5.0 — Production-Ready (2026-02-26)
+- [x] Track A: guard_download.py CLI for PromptGuard-86M model download
+- [x] Track A: entity_extraction.py — EntityExtractor ABC + RegexEntityExtractor for Temporal KG
+- [x] Track A: Temporal KG relation index, recall_by_relation(), recall_multihop()
+- [x] Track A: PhaseResult dataclass for HiveMind phase tracking
+- [x] Track A: Codex CLI hardening — is_available(), Windows .CMD lookup, robust JSONL parsing
+- [x] Track B: GET /guard/log, GET /sessions, GET /memory/stats gateway endpoints
+- [x] Track B: SqliteTaskStore — persistent A2A task store
+- [x] Track B: Dashboard wired to live API (all 5 pages), auto-refresh, connection indicator
+- [x] E2E: golden_path.py demo + 11 integration tests
+- [x] 39 new Python tests + 6 new Rust tests
+
 ### v0.4.0 — Observable Governance (2026-02-26)
 - [x] Section 1: Vector Embeddings — EmbeddingService ABC, Stub/Ollama/Local backends, cosine similarity, TieredMemory integration, Rust hybrid recall
 - [x] Section 2: Persistent Registry — SqliteRegistry, heartbeat eviction, cross-node sync, /registry/nodes API
@@ -146,5 +158,5 @@
 
 ## Summary
 
-All milestones M0–M8 + Post-MVP + v0.4.0 complete. **v0.4.0 released 2026-02-26.**
-Total: **367 Rust tests + 371 Python tests = 738 tests**, all green.
+All milestones M0–M8 + Post-MVP + v0.5.0 complete. **v0.5.0 released 2026-02-26.**
+Total: **373 Rust tests + 410 Python tests = 783 tests**, all green.

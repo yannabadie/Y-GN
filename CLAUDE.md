@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Current version: v0.4.0**
+**Current version: v0.5.0**
 
 Y-GN (Yggdrasil-Grid Nexus) is a distributed multi-agent runtime that separates **reasoning** from **execution**:
 
@@ -61,6 +61,7 @@ ygn-core diagnose              # Run diagnostics on stdin
 ```bash
 ygn-brain-mcp                  # Start Brain MCP server over stdio
 ygn-brain-repl                 # Interactive REPL
+ygn-brain-guard-download       # Download PromptGuard-86M model
 ```
 
 ### Gateway HTTP routes
@@ -70,13 +71,16 @@ ygn-brain-repl                 # Interactive REPL
 - `POST /mcp` — MCP over HTTP (JSON-RPC 2.0, Streamable HTTP transport)
 - `GET /.well-known/agent.json` — A2A Agent Card discovery
 - `POST /a2a` — A2A message handler (SendMessage, GetTask, ListTasks)
+- `GET /guard/log` — Paginated guard decision log
+- `GET /sessions` — Evidence Pack sessions list
+- `GET /memory/stats` — Memory tier distribution
 - `GET /registry/nodes` — List registered nodes
 - `POST /registry/sync` — Cross-node registry sync
 
 ### Test counts
-- Rust (ygn-core): 367 tests
-- Python (ygn-brain): 371 tests
-- Total: 738 tests
+- Rust (ygn-core): 373 tests
+- Python (ygn-brain): 410 tests
+- Total: 783 tests
 
 ## Architecture
 
@@ -133,10 +137,12 @@ Key Python modules:
 - `cosine.py` — cosine_similarity for embedding vectors
 - `guard_ml.py` — OnnxClassifierGuard, OllamaClassifierGuard (ML-based prompt injection detection)
 - `guard_stats.py` — GuardStats tracking for guard check statistics
+- `entity_extraction.py` — EntityExtractor ABC, RegexEntityExtractor for Temporal KG
+- `guard_download.py` — Model download CLI for PromptGuard-86M
 
 ### ygn-core internals
 Trait-based subsystems: `providers`, `channels`, `tools`, `memory`, `security`, `runtime`. Key components:
-- CLI + daemon + gateway (Axum) with `/health`, `/providers`, `/health/providers`, `POST /mcp`, `GET /.well-known/agent.json`, `POST /a2a` routes
+- CLI + daemon + gateway (Axum) with `/health`, `/providers`, `/health/providers`, `POST /mcp`, `GET /.well-known/agent.json`, `POST /a2a`, `/guard/log`, `/sessions`, `/memory/stats` routes
 - Multi-provider LLM: ClaudeProvider, OpenAIProvider, GeminiProvider, OllamaProvider + ProviderRegistry
 - Credential vault (zero-on-drop), rate limiter (token-bucket), provider health (circuit breaker)
 - Channels (Telegram, Discord, Matrix) + tunnels (cloudflared, tailscale, ngrok)
@@ -148,7 +154,7 @@ Trait-based subsystems: `providers`, `channels`, `tools`, `memory`, `security`, 
 ### Memory subsystem (3-tier)
 - **Hot** — semantic/TTL cache for recent interactions
 - **Warm** — temporal index + hierarchical tags (SwiftMem-inspired)
-- **Cold** — Temporal Knowledge Graph (Zep/Graphiti-inspired) + doc store; HippoRAG mode (KG + Personalized PageRank) for multi-hop reasoning. **Note:** `relations` table is declared but never populated; search uses word-overlap scoring, not vector embeddings
+- **Cold** — Temporal Knowledge Graph (Zep/Graphiti-inspired) + doc store; HippoRAG mode (KG + Personalized PageRank) for multi-hop reasoning. Relation index with `recall_by_relation()` and `recall_multihop()` for entity-based traversal
 
 Vector embeddings support via EmbeddingService (sentence-transformers or Ollama). SqliteMemory supports hybrid BM25+cosine recall.
 
@@ -188,7 +194,7 @@ Always read these files at session start. Update them when significant changes o
 
 M0 (Bootstrap) → M1 (Core usable) → M2 (Brain usable) → M3 (Brain↔Core integration) → M4 (Secure sandbox) → M5 (Memory v1) → M6 (IoA distributed) → M7 (Self-healing) → M8 (Release) → Post-MVP (Multi-Provider LLM)
 
-All milestones complete (current release: v0.4.0). The ROADMAP.md YAML block is the authoritative source for epic/task details and acceptance criteria.
+All milestones complete (current release: v0.5.0). The ROADMAP.md YAML block is the authoritative source for epic/task details and acceptance criteria.
 
 ## Key Constraints
 

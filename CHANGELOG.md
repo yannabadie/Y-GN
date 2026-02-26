@@ -3,6 +3,31 @@
 All notable changes to Y-GN (Yggdrasil-Grid Nexus) are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.5.0] — 2026-02-26
+
+### Added
+
+#### Track A — Python/Brain Production Hardening
+- `guard_download.py` — CLI tool (`ygn-brain-guard-download`) to download PromptGuard-86M from HuggingFace
+- `entity_extraction.py` — EntityExtractor ABC + RegexEntityExtractor for Temporal KG
+- Temporal Knowledge Graph: relation index, `recall_by_relation()`, `recall_multihop()` on TieredMemoryService
+- `PhaseResult` dataclass for HiveMind phase tracking (status, output, latency_ms)
+- Codex CLI hardening: `is_available()`, Windows .CMD lookup, robust JSONL parsing
+
+#### Track B — Rust/Dashboard Production Wiring
+- `GET /guard/log` — paginated guard decision log endpoint
+- `GET /sessions` — Evidence Pack sessions list endpoint
+- `GET /memory/stats` — memory tier distribution endpoint
+- `SqliteTaskStore` — persistent A2A task store (replaces in-memory)
+- Dashboard wired to live API data (all 5 pages)
+- Auto-refresh (10s polling) on Dashboard and GuardLog
+- Connection indicator (green/red dot) in sidebar
+- Additional API client functions: `fetchGuardLog`, `fetchSessions`, `fetchMemoryStats`
+
+#### E2E
+- `examples/golden_path.py` — full stack demo: Guard → Orchestrate → Evidence → Verify
+- 11 E2E integration tests
+
 ## [0.4.0] — 2026-02-26
 
 ### Added

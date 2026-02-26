@@ -60,10 +60,7 @@ class CodexCliProvider(LLMProvider):
         On Windows, npm-installed CLIs are ``.cmd`` batch scripts, so we
         also look for ``codex.cmd``.
         """
-        return (
-            shutil.which("codex") is not None
-            or shutil.which("codex.cmd") is not None
-        )
+        return shutil.which("codex") is not None or shutil.which("codex.cmd") is not None
 
     @property
     def model(self) -> str:

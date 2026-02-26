@@ -70,9 +70,7 @@ def test_recall_multihop():
 
 def test_backward_compat_no_extractor():
     mem = TieredMemoryService()
-    mem.store(
-        "k1", "def process_data", MemoryCategory.CORE, "s1", tier=MemoryTier.COLD
-    )
+    mem.store("k1", "def process_data", MemoryCategory.CORE, "s1", tier=MemoryTier.COLD)
     cold = mem._cold["k1"]
     assert cold.relations == []
 
@@ -80,8 +78,6 @@ def test_backward_compat_no_extractor():
 def test_relation_index_updated():
     ext = RegexEntityExtractor()
     mem = TieredMemoryService(entity_extractor=ext)
-    mem.store(
-        "k1", "def process_data", MemoryCategory.CORE, "s1", tier=MemoryTier.COLD
-    )
+    mem.store("k1", "def process_data", MemoryCategory.CORE, "s1", tier=MemoryTier.COLD)
     assert "process_data" in mem._relation_index
     assert "k1" in mem._relation_index["process_data"]
