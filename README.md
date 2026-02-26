@@ -1,6 +1,6 @@
 # Y-GN (Yggdrasil-Grid Nexus)
 
-**v0.5.0** — A distributed multi-agent runtime that separates reasoning from execution.
+**v0.7.0** — A distributed multi-agent runtime that separates reasoning from execution.
 
 ## Architecture
 
@@ -28,35 +28,28 @@
 **Core** (Rust) handles tool execution, sandboxing, channels, and persistence.
 They communicate over the **Model Context Protocol (MCP)**.
 
-## Works Today (E2E verified 2026-02-25)
+## Works Today (E2E verified)
 
-- **MCP Brain-Core integration** -- JSON-RPC 2.0 over stdio, echo tool discovery + invocation
-- **Codex + Gemini CLI providers** -- real LLM inference via subprocess, no API cost
-- **HiveMind 7-phase pipeline** -- diagnosis, analysis, planning, execution, validation, synthesis, completion (sync: deterministic; async: 4/7 phases LLM-backed)
-- **Guard pipeline** -- regex-based prompt injection detection (3 attack categories: instruction override, role manipulation, delimiter injection)
-- **Evidence Packs** -- auditable JSONL trace (session-stamped, per-entry timestamp/phase/kind/data)
-- **Swarm engine** -- Parallel, Sequential, Specialist modes with async LLM execution
-- **3-tier memory** -- Hot (TTL cache) / Warm (tag-indexed) / Cold (relation-linked) with word-overlap search
-- **Process sandbox** -- 4 profiles (NoNet, Net, ReadOnlyFs, ScratchFs), path traversal prevention
-- **Policy engine** -- risk assessment + action decision (Allow/Deny/RequireApproval) with audit trail
-- **HTTP gateway** -- Axum with `/health`, `/providers`, `/health/providers`
-- **SQLite FTS5 memory** -- BM25 ranking, WAL mode, trigger-synced index
-- **CLI tools** -- `status`, `gateway`, `config schema`, `tools list`, `providers list`, `mcp`, `registry list`, `diagnose`
+| Feature | File/Symbol | Verify Command |
+|---------|------------|----------------|
+| MCP Brain↔Core | `ygn-core/src/mcp.rs` | `cargo test mcp` |
+| CLI providers (Codex+Gemini) | `codex_provider.py`, `gemini_provider.py` | `pytest tests/test_codex_provider.py -v` |
+| Evidence Pack (hash chain + ed25519 + Merkle) | `evidence.py` | `pytest tests/test_evidence.py -v` |
+| Guard pipeline (regex + ML option) | `guard.py`, `guard_ml.py` | `pytest tests/test_guard.py -v` |
+| Persistent registry (SQLite) | `sqlite_registry.rs` | `cargo test sqlite_registry` |
+| Memory (3-tier + embeddings + Temporal KG) | `tiered_memory.py` | `pytest tests/test_temporal_kg.py -v` |
+| Brain MCP server (7 tools) | `mcp_server.py` | `pytest tests/test_mcp_server.py -v` |
+| Refinement Harness (Poetiq-inspired) | `harness/engine.py` | `pytest tests/test_harness_engine.py -v` |
+| Governance Dashboard (Tauri) | `ygn-dash/` | `cd ygn-dash && bun run build` |
 
-## Roadmap / Known Stubs
+## Planned / Partially Wired
 
-These features have types/interfaces but are not fully implemented:
-
-| Feature | Current State | What's Missing |
-|---------|--------------|----------------|
-| WASM/WASI sandbox | Process-level policy checks only | No wasmtime runtime, no actual WASM module execution |
-| Landlock OS sandbox | Types + `apply_linux()` stub | Explicit stub comment, not enforced |
-| Distributed registry | In-memory HashMap | Lost on restart, no persistent backing store |
-| Temporal Knowledge Graph | `ColdEntry.relations` declared | Never populated, no graph traversal |
-| Swarm Red/Blue, PingPong, LeadSupport | Enum values exist | No executor implementations, fall back to sequential |
-| A2A protocol | Not implemented | Referenced in roadmap only |
-| Brain as MCP server | Brain is MCP client only | Cannot serve tools to external callers |
-| Vector embeddings | Not implemented | Memory uses word-overlap matching |
+| Feature | Status | Blocker |
+|---------|--------|---------|
+| WASM/WASI sandbox | Stub (Wassette ready) | Wassette binary not on Windows |
+| Landlock OS sandbox | Stub (types exist) | Linux-only |
+| Real ML guard model | Code ready, model not bundled | Run `ygn-brain-guard-download` |
+| Gateway shared state | Per-request `:memory:` | Axum State wiring pending |
 
 ## Quick Install
 

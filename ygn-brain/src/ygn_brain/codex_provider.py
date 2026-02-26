@@ -18,7 +18,7 @@ from .provider import (
     ToolSpec,
 )
 
-_DEFAULT_MODEL = "gpt-5.2-codex"
+_DEFAULT_MODEL = "gpt-5.3-codex"
 _DEFAULT_TIMEOUT = 300
 
 
@@ -37,7 +37,7 @@ class CodexCliProvider(LLMProvider):
     so no API key or SDK charges are incurred.
 
     Configuration via environment variables:
-        - ``YGN_CODEX_MODEL``: model name (default ``gpt-5.2-codex``)
+        - ``YGN_CODEX_MODEL``: model name (default ``gpt-5.3-codex``)
         - ``YGN_LLM_TIMEOUT_SEC``: subprocess timeout in seconds (default 300)
     """
 

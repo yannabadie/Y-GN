@@ -59,7 +59,7 @@ def test_codex_provider_capabilities() -> None:
 
 def test_codex_provider_default_model() -> None:
     p = CodexCliProvider()
-    assert p.model == "gpt-5.2-codex"
+    assert p.model == "gpt-5.3-codex"
 
 
 def test_codex_provider_custom_model() -> None:
