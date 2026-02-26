@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import time
+from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import StrEnum
 
 from .embeddings import EmbeddingService
+from .entity_extraction import EntityExtractor
 from .memory import MemoryCategory, MemoryEntry, MemoryService
 
 
@@ -79,6 +81,7 @@ class TieredMemoryService(MemoryService):
         hot_ttl_seconds: float = 300.0,
         warm_max_age_seconds: float = 3600.0,
         embedding_service: EmbeddingService | None = None,
+        entity_extractor: EntityExtractor | None = None,
     ) -> None:
         self._hot: dict[str, HotEntry] = {}
         self._warm: dict[str, WarmEntry] = {}
@@ -86,6 +89,8 @@ class TieredMemoryService(MemoryService):
         self._hot_ttl = hot_ttl_seconds
         self._warm_max_age = warm_max_age_seconds
         self._embedding_service = embedding_service
+        self._entity_extractor = entity_extractor
+        self._relation_index: dict[str, set[str]] = defaultdict(set)
 
     # ----- MemoryService interface -----------------------------------------
 
@@ -122,6 +127,9 @@ class TieredMemoryService(MemoryService):
                 tags=resolved_tags,
             )
         else:  # COLD
+            relations: list[str] = []
+            if self._entity_extractor is not None:
+                relations = self._entity_extractor.extract(content)
             self._cold[key] = ColdEntry(
                 key=key,
                 content=content,
@@ -129,7 +137,10 @@ class TieredMemoryService(MemoryService):
                 session_id=session_id,
                 timestamp=now,
                 tags=resolved_tags,
+                relations=relations,
             )
+            for entity in relations:
+                self._relation_index[entity].add(key)
 
     def recall(
         self,
@@ -224,6 +235,59 @@ class TieredMemoryService(MemoryService):
         # Most recent first
         results.sort(key=lambda e: e.timestamp, reverse=True)
         return results[:limit]
+
+    def recall_by_relation(self, entity: str) -> list[MemoryEntry]:
+        """Return cold-tier entries that mention *entity* in their relations."""
+        keys = self._relation_index.get(entity, set())
+        results: list[MemoryEntry] = []
+        for k in keys:
+            entry = self._cold.get(k)
+            if entry is not None:
+                results.append(
+                    self._to_memory_entry(
+                        entry.key,
+                        entry.content,
+                        entry.category,
+                        entry.session_id,
+                        timestamp=entry.timestamp,
+                    )
+                )
+        results.sort(key=lambda e: e.timestamp, reverse=True)
+        return results
+
+    def recall_multihop(self, query: str, hops: int = 2) -> list[MemoryEntry]:
+        """Multi-hop recall: follow relation chains up to *hops* levels deep."""
+        seen_keys: set[str] = set()
+        # Seed: entities to explore at the current hop
+        frontier: set[str] = {query}
+
+        for _ in range(hops):
+            next_frontier: set[str] = set()
+            for entity in frontier:
+                for key in self._relation_index.get(entity, set()):
+                    if key not in seen_keys:
+                        seen_keys.add(key)
+                        cold_entry = self._cold.get(key)
+                        if cold_entry is not None:
+                            # Add this entry's relations to the next frontier
+                            next_frontier.update(cold_entry.relations)
+            frontier = next_frontier - frontier  # avoid re-exploring same entities
+
+        results: list[MemoryEntry] = []
+        for k in seen_keys:
+            entry = self._cold.get(k)
+            if entry is not None:
+                results.append(
+                    self._to_memory_entry(
+                        entry.key,
+                        entry.content,
+                        entry.category,
+                        entry.session_id,
+                        timestamp=entry.timestamp,
+                    )
+                )
+        results.sort(key=lambda e: e.timestamp, reverse=True)
+        return results
 
     def forget(self, key: str) -> bool:
         """Remove an entry from all tiers. Returns True if found in any tier."""
