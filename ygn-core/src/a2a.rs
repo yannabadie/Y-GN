@@ -4,6 +4,7 @@
 //! - Agent Card at `GET /.well-known/agent.json`
 //! - `POST /a2a` for `SendMessage` / `GetTask` / `ListTasks`
 
+use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::collections::HashMap;
@@ -95,6 +96,102 @@ impl TaskStore {
             .take(limit)
             .cloned()
             .collect()
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Persistent (SQLite) task store
+// ---------------------------------------------------------------------------
+
+/// Persistent A2A task store backed by SQLite.
+pub struct SqliteTaskStore {
+    conn: Mutex<Connection>,
+}
+
+impl SqliteTaskStore {
+    /// Open (or create) a SQLite-backed task store at `path`.
+    /// Pass `":memory:"` for an ephemeral in-memory database.
+    pub fn new(path: &str) -> anyhow::Result<Self> {
+        let conn = Connection::open(path)?;
+        conn.execute_batch(
+            "PRAGMA journal_mode=WAL;
+             PRAGMA synchronous=NORMAL;
+             CREATE TABLE IF NOT EXISTS tasks (
+                 id TEXT PRIMARY KEY,
+                 status TEXT NOT NULL,
+                 message TEXT NOT NULL,
+                 result TEXT,
+                 created_at TEXT NOT NULL,
+                 updated_at TEXT NOT NULL
+             );",
+        )?;
+        Ok(Self {
+            conn: Mutex::new(conn),
+        })
+    }
+
+    /// Create a new task from a message and persist it. Returns a JSON value
+    /// with the task fields (mirrors the shape used by the in-memory store).
+    pub fn create_task(&self, message: &str) -> Value {
+        let id = Uuid::new_v4().to_string();
+        let now = chrono::Utc::now().to_rfc3339();
+        let result_text = format!("Processed: {message}");
+        let conn = self.conn.lock().unwrap();
+        conn.execute(
+            "INSERT INTO tasks (id, status, message, result, created_at, updated_at) \
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            rusqlite::params![id, "Completed", message, result_text, now, now],
+        )
+        .unwrap();
+        json!({
+            "id": id,
+            "status": "Completed",
+            "message": message,
+            "result": result_text,
+            "created_at": now,
+        })
+    }
+
+    /// Retrieve a task by its ID.
+    pub fn get_task(&self, id: &str) -> Option<Value> {
+        let conn = self.conn.lock().unwrap();
+        conn.query_row(
+            "SELECT id, status, message, result, created_at FROM tasks WHERE id = ?1",
+            rusqlite::params![id],
+            |row| {
+                Ok(json!({
+                    "id": row.get::<_, String>(0)?,
+                    "status": row.get::<_, String>(1)?,
+                    "message": row.get::<_, String>(2)?,
+                    "result": row.get::<_, Option<String>>(3)?,
+                    "created_at": row.get::<_, String>(4)?,
+                }))
+            },
+        )
+        .ok()
+    }
+
+    /// List all tasks, most recent first.
+    pub fn list_tasks(&self) -> Vec<Value> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn
+            .prepare(
+                "SELECT id, status, message, result, created_at \
+                 FROM tasks ORDER BY created_at DESC",
+            )
+            .unwrap();
+        stmt.query_map([], |row| {
+            Ok(json!({
+                "id": row.get::<_, String>(0)?,
+                "status": row.get::<_, String>(1)?,
+                "message": row.get::<_, String>(2)?,
+                "result": row.get::<_, Option<String>>(3)?,
+                "created_at": row.get::<_, String>(4)?,
+            }))
+        })
+        .unwrap()
+        .filter_map(|r| r.ok())
+        .collect()
     }
 }
 
@@ -209,5 +306,35 @@ mod tests {
         assert_eq!(resp["id"], 2);
         assert_eq!(resp["result"]["task"]["id"], task.id);
         assert_eq!(resp["result"]["task"]["status"], "completed");
+    }
+
+    // -- SqliteTaskStore tests ------------------------------------------------
+
+    #[test]
+    fn sqlite_task_store_create_and_get() {
+        let store = SqliteTaskStore::new(":memory:").unwrap();
+        let task = store.create_task("Hello agent");
+        let id = task["id"].as_str().unwrap();
+        let found = store.get_task(id);
+        assert!(found.is_some());
+        assert_eq!(found.unwrap()["message"].as_str().unwrap(), "Hello agent");
+    }
+
+    #[test]
+    fn sqlite_task_store_list() {
+        let store = SqliteTaskStore::new(":memory:").unwrap();
+        store.create_task("Task 1");
+        store.create_task("Task 2");
+        let tasks = store.list_tasks();
+        assert_eq!(tasks.len(), 2);
+    }
+
+    #[test]
+    fn sqlite_task_store_persists() {
+        let store = SqliteTaskStore::new(":memory:").unwrap();
+        store.create_task("Persistent task");
+        let tasks = store.list_tasks();
+        assert_eq!(tasks.len(), 1);
+        assert_eq!(tasks[0]["message"].as_str().unwrap(), "Persistent task");
     }
 }
