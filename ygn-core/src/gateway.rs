@@ -180,22 +180,78 @@ async fn registry_sync(Json(body): Json<Value>) -> Json<Value> {
 // Guard / Sessions / Memory endpoints
 // ---------------------------------------------------------------------------
 
-/// `GET /guard/log` — Paginated guard decision log.
+/// `GET /guard/log` — Read guard decisions from SQLite.
 async fn guard_log() -> Json<Value> {
-    // For now, return empty list (will read from ~/.ygn/guard_log.jsonl in future)
-    Json(json!({
-        "entries": [],
-        "count": 0,
-    }))
+    let home = std::env::var("HOME")
+        .or_else(|_| std::env::var("USERPROFILE"))
+        .unwrap_or_else(|_| ".".to_string());
+    let db_path = format!("{home}/.ygn/guard_log.db");
+
+    match rusqlite::Connection::open_with_flags(
+        &db_path,
+        rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY | rusqlite::OpenFlags::SQLITE_OPEN_NO_MUTEX,
+    ) {
+        Ok(conn) => {
+            let mut stmt = match conn.prepare(
+                "SELECT id, timestamp, input_preview, threat_level, score, backend, reason, allowed \
+                 FROM guard_checks ORDER BY timestamp DESC LIMIT 50",
+            ) {
+                Ok(s) => s,
+                Err(_) => return Json(json!({ "entries": [], "count": 0 })),
+            };
+            let rows = match stmt.query_map([], |row| {
+                Ok(json!({
+                    "id": row.get::<_, String>(0)?,
+                    "timestamp": row.get::<_, String>(1)?,
+                    "input_preview": row.get::<_, String>(2)?,
+                    "threat_level": row.get::<_, String>(3)?,
+                    "score": row.get::<_, f64>(4)?,
+                    "backend": row.get::<_, String>(5)?,
+                    "reason": row.get::<_, String>(6)?,
+                    "allowed": row.get::<_, i32>(7)? != 0,
+                }))
+            }) {
+                Ok(r) => r,
+                Err(_) => return Json(json!({ "entries": [], "count": 0 })),
+            };
+            let entries: Vec<Value> = rows.filter_map(|r| r.ok()).collect();
+            let count = entries.len();
+            Json(json!({ "entries": entries, "count": count }))
+        }
+        Err(_) => Json(json!({ "entries": [], "count": 0 })),
+    }
 }
 
-/// `GET /sessions` — List Evidence Pack sessions.
+/// `GET /sessions` — List Evidence Pack sessions from disk.
 async fn sessions_list() -> Json<Value> {
-    // For now, return empty list (will read from ~/.ygn/evidence/ in future)
-    Json(json!({
-        "sessions": [],
-        "count": 0,
-    }))
+    let home = std::env::var("HOME")
+        .or_else(|_| std::env::var("USERPROFILE"))
+        .unwrap_or_else(|_| ".".to_string());
+    let evidence_dir = format!("{home}/.ygn/evidence");
+
+    let mut sessions: Vec<Value> = Vec::new();
+    if let Ok(entries) = std::fs::read_dir(&evidence_dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.extension().and_then(|e| e.to_str()) == Some("jsonl") {
+                let id = path
+                    .file_stem()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or("unknown")
+                    .to_string();
+                let size = std::fs::metadata(&path)
+                    .map(|m| m.len())
+                    .unwrap_or(0);
+                sessions.push(json!({
+                    "id": id,
+                    "file": path.to_string_lossy(),
+                    "size_bytes": size,
+                }));
+            }
+        }
+    }
+    let count = sessions.len();
+    Json(json!({ "sessions": sessions, "count": count }))
 }
 
 /// `GET /memory/stats` — Memory tier distribution.
