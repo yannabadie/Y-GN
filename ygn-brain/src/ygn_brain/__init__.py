@@ -8,7 +8,14 @@ from .codex_provider import CodexCliError, CodexCliProvider
 from .context import ContextBuilder, ExecutionContext
 from .context_compression import CompressedContext, CompressionStrategy, ContextCompressor
 from .conversation import ConversationMemory, ConversationTurn
+from .cosine import cosine_similarity
 from .dylan_metrics import AgentMetrics, DyLANTracker
+from .embeddings import (
+    EmbeddingService,
+    LocalEmbeddingService,
+    OllamaEmbeddingService,
+    StubEmbeddingService,
+)
 from .event_sourcing import EventStore, FSMEvent, InMemoryEventStore
 from .evidence import EvidenceEntry, EvidenceKind, EvidencePack
 from .evolution import (
@@ -115,8 +122,10 @@ __all__ = [
     "ContextCompressor",
     "ConversationMemory",
     "ConversationTurn",
+    "cosine_similarity",
     "DistributedSwarmEngine",
     "DyLANTracker",
+    "EmbeddingService",
     "EventStore",
     "EvolutionEngine",
     "EvolutionProposal",
@@ -146,6 +155,7 @@ __all__ = [
     "StubClassifierGuard",
     "RegexGuard",
     "ToolInvocationGuard",
+    "LocalEmbeddingService",
     "LLMProvider",
     "McpClient",
     "McpError",
@@ -155,6 +165,7 @@ __all__ = [
     "MemoryService",
     "MemoryTier",
     "ModelSelector",
+    "OllamaEmbeddingService",
     "Orchestrator",
     "ParallelExecutor",
     "RedBlueExecutor",
@@ -168,6 +179,7 @@ __all__ = [
     "SafetyGuard",
     "SequentialExecutor",
     "SpecialistExecutor",
+    "StubEmbeddingService",
     "StubLLMProvider",
     "StubVLAAdapter",
     "SuccessMemory",

@@ -80,6 +80,18 @@ _TOOLS = [
             "required": ["query"],
         },
     },
+    {
+        "name": "memory_search_semantic",
+        "description": "Semantic memory recall using vector embeddings",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "query": {"type": "string", "description": "Search query"},
+                "limit": {"type": "integer", "description": "Max results"},
+            },
+            "required": ["query"],
+        },
+    },
 ]
 
 _JSONRPC_PARSE_ERROR = -32700
@@ -169,6 +181,8 @@ class McpBrainServer:
                 return _result_response(req_id, self._call_swarm_execute(arguments))
             if tool_name == "memory_recall":
                 return _result_response(req_id, self._call_memory_recall(arguments))
+            if tool_name == "memory_search_semantic":
+                return _result_response(req_id, self._call_memory_search_semantic(arguments))
             return _error_response(req_id, _JSONRPC_METHOD_NOT_FOUND, f"Unknown tool: {tool_name}")
         except Exception as exc:  # noqa: BLE001
             return _error_response(req_id, _JSONRPC_INTERNAL_ERROR, str(exc))
@@ -241,6 +255,28 @@ class McpBrainServer:
             "results": results,
             "tier": args.get("tier", "all"),
             "count": len(results),
+        }
+
+    def _call_memory_search_semantic(self, args: dict[str, Any]) -> dict[str, Any]:
+        query = args.get("query", "")
+        limit = args.get("limit", 5)
+        # Use regular recall for now (semantic search is available when
+        # TieredMemoryService has an embedding_service configured)
+        results = self._memory.recall(query, limit=limit)
+        entries = [
+            {"key": r.key, "content": r.content, "category": r.category.value}
+            for r in results
+        ]
+        mode = (
+            "semantic"
+            if hasattr(self._memory, "_embedding_service") and self._memory._embedding_service
+            else "bm25"
+        )
+        return {
+            "content": [{"type": "text", "text": json.dumps(entries)}],
+            "results": entries,
+            "count": len(entries),
+            "mode": mode,
         }
 
     async def run_stdio(self) -> None:

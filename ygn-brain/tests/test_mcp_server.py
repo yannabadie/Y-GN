@@ -34,12 +34,15 @@ async def test_brain_mcp_initialize(server: McpBrainServer):
 
 @pytest.mark.asyncio
 async def test_brain_mcp_tools_list(server: McpBrainServer):
-    """Lists all 5 tools with correct schemas."""
+    """Lists all 6 tools with correct schemas."""
     resp = json.loads(await server.handle_message(_req("tools/list")))
     tools = resp["result"]["tools"]
-    assert len(tools) == 5
+    assert len(tools) == 6
     names = {t["name"] for t in tools}
-    expected = {"orchestrate", "guard_check", "evidence_export", "swarm_execute", "memory_recall"}
+    expected = {
+        "orchestrate", "guard_check", "evidence_export",
+        "swarm_execute", "memory_recall", "memory_search_semantic",
+    }
     assert names == expected
     # Each tool has inputSchema
     for tool in tools:
@@ -104,3 +107,17 @@ async def test_brain_mcp_evidence_export(server: McpBrainServer):
     assert result["entry_count"] > 0
     assert result["merkle_root"] != ""
     assert len(result["jsonl"]) > 0
+
+
+@pytest.mark.asyncio
+async def test_brain_mcp_memory_semantic(server: McpBrainServer):
+    """Calls memory_search_semantic tool, gets results with mode."""
+    resp = json.loads(await server.handle_message(
+        _req("tools/call", {"name": "memory_search_semantic", "arguments": {"query": "test"}})
+    ))
+    result = resp["result"]
+    assert "content" in result
+    assert len(result["content"]) > 0
+    assert "results" in result
+    assert "count" in result
+    assert result["mode"] in ("semantic", "bm25")
