@@ -6,6 +6,7 @@ import time
 from dataclasses import dataclass, field
 from enum import StrEnum
 
+from .embeddings import EmbeddingService
 from .memory import MemoryCategory, MemoryEntry, MemoryService
 
 
@@ -57,6 +58,7 @@ class ColdEntry:
     timestamp: float
     tags: list[str] = field(default_factory=list)
     relations: list[str] = field(default_factory=list)  # keys of related entries
+    embedding: list[float] | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -76,12 +78,14 @@ class TieredMemoryService(MemoryService):
         self,
         hot_ttl_seconds: float = 300.0,
         warm_max_age_seconds: float = 3600.0,
+        embedding_service: EmbeddingService | None = None,
     ) -> None:
         self._hot: dict[str, HotEntry] = {}
         self._warm: dict[str, WarmEntry] = {}
         self._cold: dict[str, ColdEntry] = {}
         self._hot_ttl = hot_ttl_seconds
         self._warm_max_age = warm_max_age_seconds
+        self._embedding_service = embedding_service
 
     # ----- MemoryService interface -----------------------------------------
 
