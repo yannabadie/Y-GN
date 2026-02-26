@@ -56,3 +56,7 @@ warn_unused_configs = true
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+markers = [
+    "e2e: end-to-end tests requiring real CLI providers (Codex/Gemini)",
+    "slow: slow tests",
+]
