@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
 import { Dashboard } from "./pages/Dashboard";
+import { GuardLog } from "./pages/GuardLog";
 
 function App() {
   return (
@@ -38,7 +39,7 @@ function App() {
         <main className="flex-1 overflow-auto">
           <Routes>
             <Route path="/" element={<Dashboard />} />
-            <Route path="/guard" element={<div className="p-6">Guard Log (coming soon)</div>} />
+            <Route path="/guard" element={<GuardLog />} />
             <Route path="/evidence" element={<div className="p-6">Evidence Viewer (coming soon)</div>} />
             <Route path="/nodes" element={<div className="p-6">Node Registry (coming soon)</div>} />
             <Route path="/memory" element={<div className="p-6">Memory Explorer (coming soon)</div>} />
