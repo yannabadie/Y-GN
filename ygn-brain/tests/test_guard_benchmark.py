@@ -55,9 +55,7 @@ def test_blocked_attacks_have_nonzero_score():
     for template in _ATTACK_TEMPLATES:
         result = pipeline.evaluate(template["text"])
         if not result.allowed:
-            assert result.score > 0.0, (
-                f"Blocked attack '{template['name']}' has zero score"
-            )
+            assert result.score > 0.0, f"Blocked attack '{template['name']}' has zero score"
 
 
 def test_passed_attacks_are_known_gaps():

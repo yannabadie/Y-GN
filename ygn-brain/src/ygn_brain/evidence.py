@@ -151,9 +151,7 @@ class EvidencePack(BaseModel):
                 if not entry.signature:
                     return False
                 try:
-                    verify_key.verify(
-                        entry.entry_hash.encode(), bytes.fromhex(entry.signature)
-                    )
+                    verify_key.verify(entry.entry_hash.encode(), bytes.fromhex(entry.signature))
                 except BadSignatureError:
                     return False
 

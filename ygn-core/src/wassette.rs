@@ -53,21 +53,12 @@ pub fn is_available() -> bool {
 // ---------------------------------------------------------------------------
 
 /// Configuration for the Wassette sandbox integration.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct WassetteConfig {
     /// Whether Wassette integration is enabled.
     pub enabled: bool,
     /// OCI registries to pull components from.
     pub registries: Vec<String>,
-}
-
-impl Default for WassetteConfig {
-    fn default() -> Self {
-        Self {
-            enabled: false,
-            registries: vec![],
-        }
-    }
 }
 
 /// WASM sandbox that delegates execution to the `wassette` CLI.

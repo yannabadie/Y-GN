@@ -140,14 +140,10 @@ class ModelSelector:
         """
         # If caller prefers a specific provider, return a sensible model for it
         if preferred_provider is not None:
-            return self._model_for_provider(
-                preferred_provider, task_complexity, requires_vision
-            )
+            return self._model_for_provider(preferred_provider, task_complexity, requires_vision)
 
         # Default: use the complexity map
-        return _COMPLEXITY_MODELS.get(
-            task_complexity, "gpt-5.2-codex"
-        )
+        return _COMPLEXITY_MODELS.get(task_complexity, "gpt-5.2-codex")
 
     # ------------------------------------------------------------------
 

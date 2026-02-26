@@ -1,6 +1,9 @@
 """Tests for the embedding service abstraction."""
 
+from unittest.mock import MagicMock, patch
+
 import pytest
+
 from ygn_brain.embeddings import EmbeddingService, StubEmbeddingService
 
 
@@ -26,9 +29,6 @@ def test_stub_embedding_empty_input():
 def test_embedding_service_is_abstract():
     with pytest.raises(TypeError):
         EmbeddingService()  # type: ignore[abstract]
-
-
-from unittest.mock import patch, MagicMock
 
 
 def test_ollama_embedding_calls_api():

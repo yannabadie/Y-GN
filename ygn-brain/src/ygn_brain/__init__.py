@@ -39,6 +39,8 @@ from .guard import (
     ToolInvocationGuard,
 )
 from .guard_backends import ClassifierGuard, StubClassifierGuard
+from .guard_ml import OllamaClassifierGuard, OnnxClassifierGuard
+from .guard_stats import GuardStats
 from .hivemind import HiveMindPipeline, PhaseResult
 from .mcp_client import McpClient, McpError
 from .memory import InMemoryBackend, MemoryCategory, MemoryEntry, MemoryService
@@ -146,6 +148,7 @@ __all__ = [
     "GuardBackend",
     "GuardPipeline",
     "GuardResult",
+    "GuardStats",
     "HiveMindPipeline",
     "HotEntry",
     "InMemoryBackend",
@@ -165,7 +168,9 @@ __all__ = [
     "MemoryService",
     "MemoryTier",
     "ModelSelector",
+    "OllamaClassifierGuard",
     "OllamaEmbeddingService",
+    "OnnxClassifierGuard",
     "Orchestrator",
     "ParallelExecutor",
     "RedBlueExecutor",

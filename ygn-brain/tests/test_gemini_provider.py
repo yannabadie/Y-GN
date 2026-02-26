@@ -87,9 +87,7 @@ def test_gemini_provider_env_timeout(monkeypatch: pytest.MonkeyPatch) -> None:
 @pytest.mark.asyncio
 @patch("shutil.which", return_value="/usr/bin/gemini")
 @patch("asyncio.create_subprocess_exec")
-async def test_gemini_chat_json_response(
-    mock_exec: AsyncMock, mock_which: MagicMock
-) -> None:
+async def test_gemini_chat_json_response(mock_exec: AsyncMock, mock_which: MagicMock) -> None:
     """Gemini returns JSON with .response field."""
     json_out = json.dumps({"response": "The answer is 42"})
     proc = _mock_process(stdout=json_out)
@@ -106,9 +104,7 @@ async def test_gemini_chat_json_response(
 @pytest.mark.asyncio
 @patch("shutil.which", return_value="/usr/bin/gemini")
 @patch("asyncio.create_subprocess_exec")
-async def test_gemini_chat_json_text_field(
-    mock_exec: AsyncMock, mock_which: MagicMock
-) -> None:
+async def test_gemini_chat_json_text_field(mock_exec: AsyncMock, mock_which: MagicMock) -> None:
     """Gemini returns JSON with .text field."""
     json_out = json.dumps({"text": "Alternative field"})
     proc = _mock_process(stdout=json_out)
@@ -122,9 +118,7 @@ async def test_gemini_chat_json_text_field(
 @pytest.mark.asyncio
 @patch("shutil.which", return_value="/usr/bin/gemini")
 @patch("asyncio.create_subprocess_exec")
-async def test_gemini_chat_raw_text_fallback(
-    mock_exec: AsyncMock, mock_which: MagicMock
-) -> None:
+async def test_gemini_chat_raw_text_fallback(mock_exec: AsyncMock, mock_which: MagicMock) -> None:
     """Gemini returns plain text (not JSON)."""
     proc = _mock_process(stdout="Just plain text response")
     mock_exec.return_value = proc
@@ -137,9 +131,7 @@ async def test_gemini_chat_raw_text_fallback(
 @pytest.mark.asyncio
 @patch("shutil.which", return_value="/usr/bin/gemini")
 @patch("asyncio.create_subprocess_exec")
-async def test_gemini_chat_passes_model(
-    mock_exec: AsyncMock, mock_which: MagicMock
-) -> None:
+async def test_gemini_chat_passes_model(mock_exec: AsyncMock, mock_which: MagicMock) -> None:
     proc = _mock_process(stdout='{"response": "ok"}')
     mock_exec.return_value = proc
 
@@ -166,9 +158,7 @@ async def test_gemini_chat_binary_not_found(mock_which: MagicMock) -> None:
 @pytest.mark.asyncio
 @patch("shutil.which", return_value="/usr/bin/gemini")
 @patch("asyncio.create_subprocess_exec")
-async def test_gemini_chat_nonzero_exit(
-    mock_exec: AsyncMock, mock_which: MagicMock
-) -> None:
+async def test_gemini_chat_nonzero_exit(mock_exec: AsyncMock, mock_which: MagicMock) -> None:
     proc = _mock_process(stderr="quota exceeded", returncode=1)
     mock_exec.return_value = proc
 
@@ -180,9 +170,7 @@ async def test_gemini_chat_nonzero_exit(
 @pytest.mark.asyncio
 @patch("shutil.which", return_value="/usr/bin/gemini")
 @patch("asyncio.create_subprocess_exec")
-async def test_gemini_chat_auth_error(
-    mock_exec: AsyncMock, mock_which: MagicMock
-) -> None:
+async def test_gemini_chat_auth_error(mock_exec: AsyncMock, mock_which: MagicMock) -> None:
     proc = _mock_process(stderr="Authentication failed: login required", returncode=1)
     mock_exec.return_value = proc
 
@@ -194,9 +182,7 @@ async def test_gemini_chat_auth_error(
 @pytest.mark.asyncio
 @patch("shutil.which", return_value="/usr/bin/gemini")
 @patch("asyncio.create_subprocess_exec")
-async def test_gemini_chat_timeout(
-    mock_exec: AsyncMock, mock_which: MagicMock
-) -> None:
+async def test_gemini_chat_timeout(mock_exec: AsyncMock, mock_which: MagicMock) -> None:
     proc = MagicMock()
 
     async def slow_communicate() -> tuple[bytes, bytes]:

@@ -82,8 +82,13 @@ class GeminiCliProvider(LLMProvider):
 
         # Run gemini CLI with JSON output
         args = [
-            gemini_bin, "--prompt", prompt,
-            "--output-format", "json", "-m", model,
+            gemini_bin,
+            "--prompt",
+            prompt,
+            "--output-format",
+            "json",
+            "-m",
+            model,
         ]
         try:
             proc = await self._spawn(args)
@@ -124,9 +129,7 @@ class GeminiCliProvider(LLMProvider):
             ),
         )
 
-    async def chat_with_tools(
-        self, request: ChatRequest, tools: list[ToolSpec]
-    ) -> ChatResponse:
+    async def chat_with_tools(self, request: ChatRequest, tools: list[ToolSpec]) -> ChatResponse:
         """MVP: include tool descriptions in the prompt text, then call chat()."""
         if not tools:
             return await self.chat(request)
@@ -154,9 +157,7 @@ class GeminiCliProvider(LLMProvider):
         args: list[str],
     ) -> asyncio.subprocess.Process:
         """Spawn a subprocess, handling Windows .CMD/.BAT scripts."""
-        if sys.platform == "win32" and args[0].lower().endswith(
-            (".cmd", ".bat")
-        ):
+        if sys.platform == "win32" and args[0].lower().endswith((".cmd", ".bat")):
             cmd_line = subprocess.list2cmdline(args)
             return await asyncio.create_subprocess_shell(
                 cmd_line,

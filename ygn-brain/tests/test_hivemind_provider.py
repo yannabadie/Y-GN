@@ -181,8 +181,13 @@ async def test_phase_timeout_completes_pipeline():
     assert len(results) == 7
     phase_names = [r.phase for r in results]
     assert phase_names == [
-        "diagnosis", "analysis", "planning", "execution",
-        "validation", "synthesis", "complete",
+        "diagnosis",
+        "analysis",
+        "planning",
+        "execution",
+        "validation",
+        "synthesis",
+        "complete",
     ]
     # Timed-out phases should have fallback content
     analysis = [r for r in results if r.phase == "analysis"][0]
@@ -202,9 +207,7 @@ async def test_phase_timeout_records_evidence():
     pipeline = HiveMindPipeline()
     evidence = EvidencePack(session_id="timeout_ev")
     provider = _SlowProvider()
-    await pipeline.run_with_provider(
-        "test", evidence, provider, phase_timeout=0.01
-    )
+    await pipeline.run_with_provider("test", evidence, provider, phase_timeout=0.01)
     error_entries = [e for e in evidence.entries if e.kind == "error"]
     assert len(error_entries) >= 1
     assert error_entries[0].data["error"] == "timeout"

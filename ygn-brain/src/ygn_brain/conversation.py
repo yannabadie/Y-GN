@@ -77,9 +77,7 @@ class ConversationMemory:
         """Convert conversation to ChatMessage list for LLM calls."""
         messages: list[ChatMessage] = []
         if self._system_prompt:
-            messages.append(
-                ChatMessage(role=ChatRole.SYSTEM, content=self._system_prompt)
-            )
+            messages.append(ChatMessage(role=ChatRole.SYSTEM, content=self._system_prompt))
         for turn in self._turns:
             messages.append(ChatMessage(role=turn.role, content=turn.content))
         return messages

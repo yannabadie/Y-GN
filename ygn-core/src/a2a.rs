@@ -106,10 +106,7 @@ impl TaskStore {
 ///
 /// Supports: `SendMessage`, `GetTask`, `ListTasks`.
 pub fn handle_a2a(request: &Value, store: &TaskStore) -> Value {
-    let method = request
-        .get("method")
-        .and_then(|v| v.as_str())
-        .unwrap_or("");
+    let method = request.get("method").and_then(|v| v.as_str()).unwrap_or("");
     let id = request.get("id").cloned().unwrap_or(Value::Null);
     let params = request.get("params").cloned().unwrap_or(json!({}));
 
@@ -129,10 +126,7 @@ pub fn handle_a2a(request: &Value, store: &TaskStore) -> Value {
             })
         }
         "GetTask" => {
-            let task_id = params
-                .get("task_id")
-                .and_then(|v| v.as_str())
-                .unwrap_or("");
+            let task_id = params.get("task_id").and_then(|v| v.as_str()).unwrap_or("");
             match store.get_task(task_id) {
                 Some(task) => json!({
                     "jsonrpc": "2.0",
@@ -147,10 +141,7 @@ pub fn handle_a2a(request: &Value, store: &TaskStore) -> Value {
             }
         }
         "ListTasks" => {
-            let limit = params
-                .get("limit")
-                .and_then(|v| v.as_u64())
-                .unwrap_or(10) as usize;
+            let limit = params.get("limit").and_then(|v| v.as_u64()).unwrap_or(10) as usize;
             let tasks = store.list_tasks(limit);
             json!({
                 "jsonrpc": "2.0",
@@ -199,10 +190,7 @@ mod tests {
         let task = &resp["result"]["task"];
         assert!(!task["id"].as_str().unwrap().is_empty());
         assert_eq!(task["status"], "completed");
-        assert!(task["result"]
-            .as_str()
-            .unwrap()
-            .contains("Hello, agent!"));
+        assert!(task["result"].as_str().unwrap().contains("Hello, agent!"));
     }
 
     #[test]

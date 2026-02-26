@@ -97,8 +97,7 @@ class LocalEmbeddingService(EmbeddingService):
                 from sentence_transformers import SentenceTransformer
             except ImportError as e:
                 raise ImportError(
-                    "sentence-transformers required. Install with: "
-                    "pip install 'ygn-brain[ml]'"
+                    "sentence-transformers required. Install with: pip install 'ygn-brain[ml]'"
                 ) from e
             self._model = SentenceTransformer(self._model_name)
             self._dim = self._model.get_sentence_embedding_dimension()

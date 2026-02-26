@@ -114,14 +114,17 @@ impl McpServer {
         let req: JsonRpcRequest = match serde_json::from_value(request) {
             Ok(r) => r,
             Err(e) => {
-                return Some(serde_json::to_value(JsonRpcErrorResponse {
-                    jsonrpc: "2.0".into(),
-                    id: Value::Null,
-                    error: JsonRpcError {
-                        code: -32700,
-                        message: format!("Parse error: {e}"),
-                    },
-                }).unwrap());
+                return Some(
+                    serde_json::to_value(JsonRpcErrorResponse {
+                        jsonrpc: "2.0".into(),
+                        id: Value::Null,
+                        error: JsonRpcError {
+                            code: -32700,
+                            message: format!("Parse error: {e}"),
+                        },
+                    })
+                    .unwrap(),
+                );
             }
         };
 
@@ -142,12 +145,14 @@ impl McpServer {
                 jsonrpc: "2.0".into(),
                 id,
                 result: value,
-            }).unwrap(),
+            })
+            .unwrap(),
             Err((code, message)) => serde_json::to_value(JsonRpcErrorResponse {
                 jsonrpc: "2.0".into(),
                 id,
                 error: JsonRpcError { code, message },
-            }).unwrap(),
+            })
+            .unwrap(),
         };
 
         Some(response)

@@ -136,9 +136,7 @@ class Orchestrator:
             }
 
         # Run HiveMind pipeline with provider
-        results = await self._hivemind.run_with_provider(
-            user_input, ctx.evidence, self._provider
-        )
+        results = await self._hivemind.run_with_provider(user_input, ctx.evidence, self._provider)
 
         # Update internal state
         self.state = FSMState()

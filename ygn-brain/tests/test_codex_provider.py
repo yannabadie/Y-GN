@@ -84,22 +84,21 @@ def test_codex_provider_env_timeout(monkeypatch: pytest.MonkeyPatch) -> None:
 # ---------------------------------------------------------------------------
 
 
-_JSONL_OK = "\n".join([
-    '{"type":"thread.started","thread_id":"test-123"}',
-    '{"type":"turn.started"}',
-    '{"type":"item.completed","item":{"id":"item_0",'
-    '"type":"agent_message","text":"This is the LLM response"}}',
-    '{"type":"turn.completed",'
-    '"usage":{"input_tokens":50,"output_tokens":10}}',
-])
+_JSONL_OK = "\n".join(
+    [
+        '{"type":"thread.started","thread_id":"test-123"}',
+        '{"type":"turn.started"}',
+        '{"type":"item.completed","item":{"id":"item_0",'
+        '"type":"agent_message","text":"This is the LLM response"}}',
+        '{"type":"turn.completed","usage":{"input_tokens":50,"output_tokens":10}}',
+    ]
+)
 
 
 @pytest.mark.asyncio
 @patch("shutil.which", return_value="/usr/bin/codex")
 @patch("asyncio.create_subprocess_exec")
-async def test_codex_chat_success(
-    mock_exec: AsyncMock, mock_which: MagicMock
-) -> None:
+async def test_codex_chat_success(mock_exec: AsyncMock, mock_which: MagicMock) -> None:
     proc = _mock_process(stdout=_JSONL_OK)
     mock_exec.return_value = proc
 
@@ -117,9 +116,7 @@ async def test_codex_chat_success(
 @pytest.mark.asyncio
 @patch("shutil.which", return_value="/usr/bin/codex")
 @patch("asyncio.create_subprocess_exec")
-async def test_codex_chat_passes_model(
-    mock_exec: AsyncMock, mock_which: MagicMock
-) -> None:
+async def test_codex_chat_passes_model(mock_exec: AsyncMock, mock_which: MagicMock) -> None:
     proc = _mock_process(stdout=_JSONL_OK)
     mock_exec.return_value = proc
 
@@ -149,9 +146,7 @@ async def test_codex_chat_binary_not_found(mock_which: MagicMock) -> None:
 @pytest.mark.asyncio
 @patch("shutil.which", return_value="/usr/bin/codex")
 @patch("asyncio.create_subprocess_exec")
-async def test_codex_chat_nonzero_exit(
-    mock_exec: AsyncMock, mock_which: MagicMock
-) -> None:
+async def test_codex_chat_nonzero_exit(mock_exec: AsyncMock, mock_which: MagicMock) -> None:
     proc = _mock_process(stderr="rate limit exceeded", returncode=1)
     mock_exec.return_value = proc
 
@@ -163,9 +158,7 @@ async def test_codex_chat_nonzero_exit(
 @pytest.mark.asyncio
 @patch("shutil.which", return_value="/usr/bin/codex")
 @patch("asyncio.create_subprocess_exec")
-async def test_codex_chat_timeout(
-    mock_exec: AsyncMock, mock_which: MagicMock
-) -> None:
+async def test_codex_chat_timeout(mock_exec: AsyncMock, mock_which: MagicMock) -> None:
     proc = MagicMock()
 
     async def slow_communicate() -> tuple[bytes, bytes]:
@@ -191,12 +184,13 @@ async def test_codex_chat_timeout(
 async def test_codex_chat_with_tools_injects_tool_text(
     mock_exec: AsyncMock, mock_which: MagicMock
 ) -> None:
-    jsonl_tools = "\n".join([
-        '{"type":"item.completed","item":{"id":"item_0",'
-        '"type":"agent_message","text":"I would use search"}}',
-        '{"type":"turn.completed",'
-        '"usage":{"input_tokens":10,"output_tokens":5}}',
-    ])
+    jsonl_tools = "\n".join(
+        [
+            '{"type":"item.completed","item":{"id":"item_0",'
+            '"type":"agent_message","text":"I would use search"}}',
+            '{"type":"turn.completed","usage":{"input_tokens":10,"output_tokens":5}}',
+        ]
+    )
     proc = _mock_process(stdout=jsonl_tools)
     mock_exec.return_value = proc
 

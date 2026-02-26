@@ -169,9 +169,7 @@ class HiveMindPipeline:
                     return await asyncio.wait_for(coro, timeout=phase_timeout)
                 return await coro
             except TimeoutError:
-                logger.error(
-                    "Phase '%s' timed out after %.1fs", phase_name, phase_timeout
-                )
+                logger.error("Phase '%s' timed out after %.1fs", phase_name, phase_timeout)
                 evidence.add(
                     phase_name,
                     "error",
@@ -230,9 +228,7 @@ class HiveMindPipeline:
         val_data: dict[str, Any] = {"passed": valid, "output": exec_output}
         evidence.add("validation", "decision", val_data)
         val_confidence = 0.9 if valid else 0.4
-        results.append(
-            PhaseResult(phase="validation", data=val_data, confidence=val_confidence)
-        )
+        results.append(PhaseResult(phase="validation", data=val_data, confidence=val_confidence))
 
         # Phase 6 — Synthesis: ask the LLM for a final answer
         fsm = fsm.transition(Phase.SYNTHESIS)
@@ -331,8 +327,7 @@ class HiveMindPipeline:
                     ChatMessage(
                         role=ChatRole.USER,
                         content=(
-                            f"Original request: {user_input}\n\n"
-                            f"Execution output:\n{exec_output}"
+                            f"Original request: {user_input}\n\nExecution output:\n{exec_output}"
                         ),
                     ),
                 ],

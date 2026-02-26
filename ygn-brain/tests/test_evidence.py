@@ -74,8 +74,13 @@ def test_evidence_jsonl_seven_phases():
     """Phase 4.2: 7-phase pipeline produces valid JSONL with all expected entries."""
     pack = EvidencePack(session_id="jsonl_test")
     phases = [
-        "diagnosis", "analysis", "planning", "execution",
-        "validation", "synthesis", "complete",
+        "diagnosis",
+        "analysis",
+        "planning",
+        "execution",
+        "validation",
+        "synthesis",
+        "complete",
     ]
     kinds = ["input", "decision", "decision", "output", "decision", "output", "output"]
     for phase, kind in zip(phases, kinds, strict=True):
@@ -104,8 +109,13 @@ def test_hash_chain_integrity():
     """7 entries: each prev_hash links to prior entry_hash."""
     pack = EvidencePack(session_id="chain_test")
     phases = [
-        "diagnosis", "analysis", "planning", "execution",
-        "validation", "synthesis", "complete",
+        "diagnosis",
+        "analysis",
+        "planning",
+        "execution",
+        "validation",
+        "synthesis",
+        "complete",
     ]
     for phase in phases:
         pack.add(phase, "decision", {"phase": phase})

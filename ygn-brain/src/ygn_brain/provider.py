@@ -97,9 +97,7 @@ class LLMProvider(ABC):
         """Send a chat completion request."""
 
     @abstractmethod
-    async def chat_with_tools(
-        self, request: ChatRequest, tools: list[ToolSpec]
-    ) -> ChatResponse:
+    async def chat_with_tools(self, request: ChatRequest, tools: list[ToolSpec]) -> ChatResponse:
         """Send a chat completion request with tool definitions."""
 
 
@@ -136,9 +134,7 @@ class StubLLMProvider(LLMProvider):
             ),
         )
 
-    async def chat_with_tools(
-        self, request: ChatRequest, tools: list[ToolSpec]
-    ) -> ChatResponse:
+    async def chat_with_tools(self, request: ChatRequest, tools: list[ToolSpec]) -> ChatResponse:
         """Return a canned response that includes a stub tool call when tools are provided."""
         base = await self.chat(request)
         if tools:

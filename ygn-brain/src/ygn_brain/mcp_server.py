@@ -154,14 +154,17 @@ class McpBrainServer:
         )
 
     def _handle_initialize(self, req_id: Any) -> dict[str, Any]:
-        return _result_response(req_id, {
-            "protocolVersion": "2024-11-05",
-            "capabilities": {"tools": {"listChanged": False}},
-            "serverInfo": {
-                "name": "ygn-brain",
-                "version": "0.3.0",
+        return _result_response(
+            req_id,
+            {
+                "protocolVersion": "2024-11-05",
+                "capabilities": {"tools": {"listChanged": False}},
+                "serverInfo": {
+                    "name": "ygn-brain",
+                    "version": "0.3.0",
+                },
             },
-        })
+        )
 
     def _handle_tools_list(self, req_id: Any) -> dict[str, Any]:
         return _result_response(req_id, {"tools": _TOOLS})
@@ -246,10 +249,7 @@ class McpBrainServer:
     def _call_memory_recall(self, args: dict[str, Any]) -> dict[str, Any]:
         query = args["query"]
         entries = self._memory.recall(query, limit=5)
-        results = [
-            {"key": e.key, "content": e.content, "category": e.category}
-            for e in entries
-        ]
+        results = [{"key": e.key, "content": e.content, "category": e.category} for e in entries]
         return {
             "content": [{"type": "text", "text": json.dumps(results)}],
             "results": results,
@@ -264,8 +264,7 @@ class McpBrainServer:
         # TieredMemoryService has an embedding_service configured)
         results = self._memory.recall(query, limit=limit)
         entries = [
-            {"key": r.key, "content": r.content, "category": r.category.value}
-            for r in results
+            {"key": r.key, "content": r.content, "category": r.category.value} for r in results
         ]
         mode = (
             "semantic"

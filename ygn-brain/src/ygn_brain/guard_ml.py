@@ -41,8 +41,7 @@ class OnnxClassifierGuard(ClassifierGuard):
             from transformers import AutoTokenizer
         except ImportError as e:
             raise ImportError(
-                "onnxruntime and transformers required. "
-                "Install with: pip install 'ygn-brain[ml]'"
+                "onnxruntime and transformers required. Install with: pip install 'ygn-brain[ml]'"
             ) from e
 
         if self._model_path is None:
@@ -51,18 +50,14 @@ class OnnxClassifierGuard(ClassifierGuard):
                 "Download from HuggingFace: meta-llama/Prompt-Guard-86M"
             )
         self._tokenizer = AutoTokenizer.from_pretrained(self._model_path)
-        self._session = ort.InferenceSession(
-            f"{self._model_path}/model.onnx"
-        )
+        self._session = ort.InferenceSession(f"{self._model_path}/model.onnx")
 
     def classify(self, text: str) -> tuple[bool, float]:
         if self._stub:
             return (True, 0.0)
 
         self._load_model()
-        inputs = self._tokenizer(
-            text, return_tensors="np", truncation=True, max_length=512
-        )
+        inputs = self._tokenizer(text, return_tensors="np", truncation=True, max_length=512)
         outputs = self._session.run(None, dict(inputs))
         import numpy as np
 

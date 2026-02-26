@@ -21,9 +21,7 @@ from ygn_brain.swarm import (
 
 
 # A task that triggers exactly 2 domains (research + code) and COMPLEX complexity -> PARALLEL
-_PARALLEL_TASK = (
-    "Investigate the performance of this function and refactor it to be more efficient"
-)
+_PARALLEL_TASK = "Investigate the performance of this function and refactor it to be more efficient"
 
 
 @pytest.mark.asyncio
@@ -207,9 +205,7 @@ async def test_red_blue_evidence_entries():
     provider = StubLLMProvider()
     pack = EvidencePack(session_id="rb_evidence")
 
-    await engine._run_red_blue(
-        "test task", provider, evidence_pack=pack
-    )
+    await engine._run_red_blue("test task", provider, evidence_pack=pack)
 
     # Evidence pack should have entries from the red/blue run
     assert len(pack.entries) > 0

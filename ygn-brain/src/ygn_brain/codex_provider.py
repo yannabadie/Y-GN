@@ -110,9 +110,7 @@ class CodexCliProvider(LLMProvider):
             usage=usage,
         )
 
-    async def chat_with_tools(
-        self, request: ChatRequest, tools: list[ToolSpec]
-    ) -> ChatResponse:
+    async def chat_with_tools(self, request: ChatRequest, tools: list[ToolSpec]) -> ChatResponse:
         """MVP: include tool descriptions in the prompt text, then call chat()."""
         if not tools:
             return await self.chat(request)
@@ -147,9 +145,7 @@ class CodexCliProvider(LLMProvider):
         ``create_subprocess_shell`` with ``subprocess.list2cmdline``
         to go through ``cmd.exe`` in that case.
         """
-        if sys.platform == "win32" and args[0].lower().endswith(
-            (".cmd", ".bat")
-        ):
+        if sys.platform == "win32" and args[0].lower().endswith((".cmd", ".bat")):
             cmd_line = subprocess.list2cmdline(args)
             return await asyncio.create_subprocess_shell(
                 cmd_line,

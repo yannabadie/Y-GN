@@ -2,7 +2,7 @@
 
 from ygn_brain.embeddings import StubEmbeddingService
 from ygn_brain.memory import MemoryCategory
-from ygn_brain.tiered_memory import TieredMemoryService, MemoryTier
+from ygn_brain.tiered_memory import TieredMemoryService
 
 
 def test_tiered_memory_accepts_embedding_service():
