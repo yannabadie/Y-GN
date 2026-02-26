@@ -68,7 +68,8 @@ impl SqliteMemory {
                 category   TEXT NOT NULL,
                 session_id TEXT,
                 created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL
+                updated_at TEXT NOT NULL,
+                embedding  BLOB
             );
 
             CREATE VIRTUAL TABLE IF NOT EXISTS memories_fts
@@ -93,6 +94,195 @@ impl SqliteMemory {
             END;",
         )?;
         Ok(())
+    }
+    /// Store a memory entry with an optional embedding vector.
+    pub async fn store_with_embedding(
+        &self,
+        key: &str,
+        content: &str,
+        category: MemoryCategory,
+        session_id: Option<&str>,
+        embedding: Option<&[f32]>,
+    ) -> anyhow::Result<()> {
+        let conn = self.conn.lock().map_err(|e| anyhow::anyhow!("{e}"))?;
+        let now = Utc::now();
+        let now_str = now.to_rfc3339();
+        let id = uuid::Uuid::new_v4().to_string();
+        let cat_str = category_to_string(&category);
+
+        let emb_bytes: Option<Vec<u8>> =
+            embedding.map(|e| e.iter().flat_map(|f| f.to_le_bytes()).collect::<Vec<u8>>());
+
+        // Check if key+category already exists — if so, UPDATE instead of INSERT
+        let existing_id: Option<String> = conn
+            .query_row(
+                "SELECT id FROM memories WHERE key = ?1 AND category = ?2",
+                params![key, cat_str],
+                |row| row.get(0),
+            )
+            .ok();
+
+        if let Some(eid) = existing_id {
+            conn.execute(
+                "UPDATE memories SET content = ?1, updated_at = ?2, embedding = ?3 WHERE id = ?4",
+                params![content, &now_str, emb_bytes, &eid],
+            )?;
+        } else {
+            conn.execute(
+                "INSERT INTO memories (id, key, content, category, session_id, created_at, updated_at, embedding) \
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+                params![&id, key, content, &cat_str, session_id, &now_str, &now_str, emb_bytes],
+            )?;
+        }
+
+        Ok(())
+    }
+
+    /// Recall memories with optional embedding-based reranking.
+    /// When `query_embedding` is provided, combines cosine similarity (0.7 weight)
+    /// with BM25 score (0.3 weight) for hybrid ranking.
+    pub async fn recall_with_embedding(
+        &self,
+        query: &str,
+        category: Option<MemoryCategory>,
+        limit: usize,
+        query_embedding: Option<&[f32]>,
+    ) -> anyhow::Result<Vec<MemoryEntry>> {
+        let conn = self.conn.lock().map_err(|e| anyhow::anyhow!("{e}"))?;
+
+        if query.trim().is_empty() {
+            return Ok(Vec::new());
+        }
+
+        // Tokenize and create an OR query for FTS5
+        let fts_query: String = query
+            .split_whitespace()
+            .map(|w| {
+                let escaped = w.replace('"', "");
+                format!("\"{escaped}\"")
+            })
+            .collect::<Vec<_>>()
+            .join(" OR ");
+
+        // Fetch candidates with BM25 scores (fetch more than limit for reranking)
+        let fetch_limit = if query_embedding.is_some() {
+            (limit * 5).max(50) // Over-fetch for reranking
+        } else {
+            limit
+        };
+
+        struct Candidate {
+            entry: MemoryEntry,
+            bm25_score: f64,
+            embedding_blob: Option<Vec<u8>>,
+        }
+
+        let mut candidates: Vec<Candidate> = Vec::new();
+
+        if let Some(ref cat) = category {
+            let cat_str = category_to_string(cat);
+            let mut stmt = conn.prepare(
+                "SELECT m.id, m.key, m.content, m.category, m.session_id, m.created_at, m.updated_at,
+                        bm25(memories_fts) AS bm25_score, m.embedding
+                 FROM memories_fts f
+                 JOIN memories m ON m.rowid = f.rowid
+                 WHERE memories_fts MATCH ?1 AND m.category = ?2
+                 ORDER BY bm25(memories_fts)
+                 LIMIT ?3",
+            )?;
+            let rows =
+                stmt.query_map(params![&fts_query, &cat_str, fetch_limit as i64], |row| {
+                    let entry = row_to_entry(row)?;
+                    let bm25_score: f64 = row.get(7)?;
+                    let embedding_blob: Option<Vec<u8>> = row.get(8)?;
+                    Ok(Candidate {
+                        entry,
+                        bm25_score,
+                        embedding_blob,
+                    })
+                })?;
+            for row in rows {
+                candidates.push(row?);
+            }
+        } else {
+            let mut stmt = conn.prepare(
+                "SELECT m.id, m.key, m.content, m.category, m.session_id, m.created_at, m.updated_at,
+                        bm25(memories_fts) AS bm25_score, m.embedding
+                 FROM memories_fts f
+                 JOIN memories m ON m.rowid = f.rowid
+                 WHERE memories_fts MATCH ?1
+                 ORDER BY bm25(memories_fts)
+                 LIMIT ?2",
+            )?;
+            let rows = stmt.query_map(params![&fts_query, fetch_limit as i64], |row| {
+                let entry = row_to_entry(row)?;
+                let bm25_score: f64 = row.get(7)?;
+                let embedding_blob: Option<Vec<u8>> = row.get(8)?;
+                Ok(Candidate {
+                    entry,
+                    bm25_score,
+                    embedding_blob,
+                })
+            })?;
+            for row in rows {
+                candidates.push(row?);
+            }
+        }
+
+        // If no query embedding, just return the BM25-ordered results
+        if query_embedding.is_none() || candidates.is_empty() {
+            return Ok(candidates
+                .into_iter()
+                .take(limit)
+                .map(|c| c.entry)
+                .collect());
+        }
+
+        let q_emb = query_embedding.unwrap();
+
+        // Normalize BM25 scores (BM25 in SQLite FTS5 returns negative values;
+        // more negative = better match). We normalize to [0, 1].
+        let min_bm25 = candidates
+            .iter()
+            .map(|c| c.bm25_score)
+            .fold(f64::INFINITY, f64::min);
+        let max_bm25 = candidates
+            .iter()
+            .map(|c| c.bm25_score)
+            .fold(f64::NEG_INFINITY, f64::max);
+        let bm25_range = (max_bm25 - min_bm25).abs();
+
+        // Compute hybrid scores and sort
+        let mut scored: Vec<(MemoryEntry, f64)> = candidates
+            .into_iter()
+            .map(|c| {
+                // Normalize BM25 to [0, 1] (more negative = better, so invert)
+                let norm_bm25 = if bm25_range > f64::EPSILON {
+                    (max_bm25 - c.bm25_score) / bm25_range
+                } else {
+                    1.0
+                };
+
+                // Compute cosine similarity if embedding is available
+                let cos_sim = if let Some(ref blob) = c.embedding_blob {
+                    let stored_emb: Vec<f32> = blob
+                        .chunks_exact(4)
+                        .map(|b| f32::from_le_bytes([b[0], b[1], b[2], b[3]]))
+                        .collect();
+                    cosine_similarity(q_emb, &stored_emb) as f64
+                } else {
+                    0.0
+                };
+
+                // Hybrid score: 0.7 * cosine + 0.3 * normalized_bm25
+                let hybrid = 0.7 * cos_sim + 0.3 * norm_bm25;
+                (c.entry, hybrid)
+            })
+            .collect();
+
+        scored.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+
+        Ok(scored.into_iter().take(limit).map(|(e, _)| e).collect())
     }
 }
 
@@ -507,5 +697,56 @@ mod tests {
     #[test]
     fn cosine_empty() {
         assert_eq!(super::cosine_similarity(&[], &[]), 0.0);
+    }
+
+    #[tokio::test]
+    async fn store_with_embedding_roundtrip() {
+        let mem = SqliteMemory::in_memory().unwrap();
+        mem.store_with_embedding(
+            "k1",
+            "hello world",
+            MemoryCategory::Core,
+            None,
+            Some(&[0.1_f32, 0.2, 0.3, 0.4]),
+        )
+        .await
+        .unwrap();
+
+        let result = mem.get(MemoryCategory::Core, "k1").await.unwrap();
+        assert!(result.is_some());
+        assert_eq!(result.unwrap().content, "hello world");
+    }
+
+    #[tokio::test]
+    async fn recall_with_embedding_query() {
+        let mem = SqliteMemory::in_memory().unwrap();
+        mem.store_with_embedding(
+            "k1",
+            "the cat sat on the mat",
+            MemoryCategory::Core,
+            None,
+            Some(&[1.0_f32, 0.0, 0.0, 0.0]),
+        )
+        .await
+        .unwrap();
+
+        mem.store_with_embedding(
+            "k2",
+            "dogs are great pets",
+            MemoryCategory::Core,
+            None,
+            Some(&[0.0_f32, 1.0, 0.0, 0.0]),
+        )
+        .await
+        .unwrap();
+
+        // Query embedding close to k1
+        let results = mem
+            .recall_with_embedding("cat", None, 5, Some(&[0.9_f32, 0.1, 0.0, 0.0]))
+            .await
+            .unwrap();
+
+        assert!(!results.is_empty());
+        assert_eq!(results[0].key, "k1");
     }
 }
