@@ -54,6 +54,17 @@ class CodexCliProvider(LLMProvider):
     def name(self) -> str:
         return "codex"
 
+    def is_available(self) -> bool:
+        """Check if the codex CLI is installed and accessible on PATH.
+
+        On Windows, npm-installed CLIs are ``.cmd`` batch scripts, so we
+        also look for ``codex.cmd``.
+        """
+        return (
+            shutil.which("codex") is not None
+            or shutil.which("codex.cmd") is not None
+        )
+
     @property
     def model(self) -> str:
         """Return the configured model name."""
@@ -72,8 +83,8 @@ class CodexCliProvider(LLMProvider):
         prompt = self._build_prompt(request)
         model = request.model or self._model
 
-        # Check that codex is available
-        codex_bin = shutil.which("codex")
+        # Check that codex is available (also handles codex.cmd on Windows)
+        codex_bin = shutil.which("codex") or shutil.which("codex.cmd")
         if codex_bin is None:
             msg = (
                 "codex CLI not found on PATH. "
