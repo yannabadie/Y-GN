@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-__version__ = "0.6.0"
+__version__ = "0.7.0"
 
 from .codex_provider import CodexCliError, CodexCliProvider
 from .context import ContextBuilder, ExecutionContext
@@ -41,6 +41,7 @@ from .guard import (
 )
 from .guard_backends import ClassifierGuard, StubClassifierGuard
 from .guard_download import ensure_model_dir, get_model_dir
+from .guard_log import GuardLog
 from .guard_ml import OllamaClassifierGuard, OnnxClassifierGuard
 from .guard_stats import GuardStats
 from .hivemind import HiveMindPipeline, PhaseResult
@@ -151,6 +152,7 @@ __all__ = [
     "GeminiCliProvider",
     "get_model_dir",
     "GuardBackend",
+    "GuardLog",
     "GuardPipeline",
     "GuardResult",
     "GuardStats",

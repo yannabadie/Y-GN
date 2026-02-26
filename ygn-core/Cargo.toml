@@ -1,6 +1,6 @@
 [package]
 name = "ygn-core"
-version = "0.6.0"
+version = "0.7.0"
 edition = "2021"
 description = "Y-GN data-plane: tool execution, channels, tunnels, sandboxing, memory"
 license = "Apache-2.0"

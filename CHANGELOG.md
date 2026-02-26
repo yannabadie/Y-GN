@@ -3,6 +3,31 @@
 All notable changes to Y-GN (Yggdrasil-Grid Nexus) are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.7.0] — 2026-02-26
+
+### Changed — Hardening Sprint "Truth & Wiring"
+
+#### Phase 1: Doc Drift Fix
+- README fact-first rewrite: "Works Today" + "Planned / Partially Wired" sections
+- Version aligned to 0.7.0 across all manifests
+
+#### Phase 2: Harness Réel
+- Codex default model: `gpt-5.2-codex` → `gpt-5.3-codex`
+- `orchestrate_refined` MCP tool: uses real `MultiProviderGenerator` when `ensemble=True`
+
+#### Phase 3: Wire Persistence
+- `GET /guard/log` reads from `~/.ygn/guard_log.db` (SQLite, read-only)
+- `GET /sessions` scans `~/.ygn/evidence/` for real JSONL files
+- `GuardLog` class: persistent SQLite guard check log (record, list, stats)
+
+#### Phase 4: MCP Alignment
+- Added `-32600` (Invalid Request) error code
+- Accept header awareness in MCP HTTP handler
+
+### Fixed
+- README version drift (v0.5.0 → v0.7.0)
+- "Known Stubs" replaced with fact-checked sections
+
 ## [0.6.0] — 2026-02-26
 
 ### Added — Refinement Harness (Poetiq-inspired)

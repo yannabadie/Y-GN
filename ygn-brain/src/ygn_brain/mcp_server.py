@@ -325,7 +325,9 @@ class McpBrainServer:
             selector=ConsensusSelector(),
         )
         config = HarnessConfig(
-            providers=providers, max_rounds=max_rounds, ensemble=ensemble,
+            providers=providers,
+            max_rounds=max_rounds,
+            ensemble=ensemble,
         )
         result = await harness.run(task, config)
         return {

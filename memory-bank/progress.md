@@ -125,6 +125,14 @@
 - [FIXED] EvidenceEntry.kind accepted arbitrary strings
 - [FIXED] No timeout on HiveMind LLM phases (Gemini hangs on 3rd call)
 
+### v0.7.0 — Hardening Sprint "Truth & Wiring" (2026-02-26)
+- [x] Phase 1: README fact-first rewrite, version alignment to 0.7.0
+- [x] Phase 2: Codex default model gpt-5.2-codex → gpt-5.3-codex, orchestrate_refined wired to real MultiProviderGenerator
+- [x] Phase 3: GET /guard/log reads from ~/.ygn/guard_log.db, GET /sessions scans real JSONL, GuardLog class
+- [x] Phase 4: MCP -32600 Invalid Request error code, Accept header awareness
+- [x] GuardLog exported from ygn_brain
+- [x] 7 new Rust tests + 3 new Python tests
+
 ### v0.6.0 — Refinement Harness (2026-02-26)
 - [x] Harness types: Candidate, Feedback, HarnessConfig, HarnessResult, POETIQ_PRESET
 - [x] Verifier ABC + TextVerifier + CommandVerifier
@@ -169,5 +177,5 @@
 
 ## Summary
 
-All milestones M0–M8 + Post-MVP + v0.6.0 complete. **v0.6.0 released 2026-02-26.**
-Total: **373 Rust tests + 442 Python tests = 815 tests**, all green.
+All milestones M0–M8 + Post-MVP + v0.7.0 complete. **v0.7.0 released 2026-02-26.**
+Total: **380 Rust tests + 445 Python tests = 825 tests**, all green.

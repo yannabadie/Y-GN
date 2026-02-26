@@ -2,14 +2,14 @@
 
 ## Current Focus
 
-- [2026-02-26] v0.6.0 release: Refinement Harness (Poetiq-inspired)
-- Generic generate-verify-refine loop, multi-provider consensus, pattern capitalization, orchestrate_refined MCP tool
+- [2026-02-26] v0.7.0 release: Hardening Sprint "Truth & Wiring"
+- README fact-first rewrite, wire persistence (GuardLog, sessions), MCP alignment, Codex model update
 
 ## Test Counts (2026-02-26)
 
-- Rust: 373 tests
-- Python: 442 tests
-- Total: 815
+- Rust: 380 tests
+- Python: 445 tests
+- Total: 825
 
 ## Known Gaps (Documented)
 

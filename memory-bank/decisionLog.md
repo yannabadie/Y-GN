@@ -40,3 +40,6 @@
 | 2026-02-26 | ConsensusSelector with +0.15 bonus for multi-provider agreement | Inspired by Poetiq's finding that ensemble multi-model improves results. Simple heuristic, not embedding-based. |
 | 2026-02-26 | HarnessMemoryStore uses COLD tier for pattern capitalization | Poetiq's "learns how tasks are solved" — winning patterns stored for semantic recall in future runs. |
 | 2026-02-26 | Fix README v0.2.1 + MCP 0.3.0 drifts in same release | analyse.md flagged these drifts — cleaning them up alongside the feature release. |
+| 2026-02-26 | v0.7.0: Codex default model gpt-5.2-codex → gpt-5.3-codex | Codex CLI updated to gpt-5.3-codex as default. ModelSelector fallback updated accordingly. |
+| 2026-02-26 | v0.7.0: Wire persistence — GuardLog SQLite + sessions from real JSONL | GET /guard/log now reads from ~/.ygn/guard_log.db (SQLite, read-only). GET /sessions scans ~/.ygn/evidence/ for real JSONL files. Eliminates mock/stub data in production endpoints. |
+| 2026-02-26 | v0.7.0: MCP alignment — -32600 + Accept header | Added INVALID_REQUEST (-32600) error code per JSON-RPC 2.0 spec. Accept header awareness in MCP HTTP handler for content negotiation. |
