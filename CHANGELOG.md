@@ -3,6 +3,27 @@
 All notable changes to Y-GN (Yggdrasil-Grid Nexus) are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.6.0] — 2026-02-26
+
+### Added — Refinement Harness (Poetiq-inspired)
+
+#### Core Engine
+- `RefinementHarness` — generic generate-verify-refine loop engine
+- `CandidateGenerator` ABC + `StubCandidateGenerator` + `MultiProviderGenerator`
+- `Verifier` ABC + `TextVerifier` (heuristic quality) + `CommandVerifier` (shell command)
+- `RefinementPolicy` ABC + `DefaultPolicy` (max_rounds + min_score)
+- `Selector` ABC + `ConsensusSelector` (score + multi-provider agreement bonus)
+- `HarnessMemoryStore` — capitalizes winning patterns in TieredMemoryService
+- `POETIQ_PRESET` — default config for Poetiq-style ensemble refinement
+
+#### Integration
+- `orchestrate_refined` MCP tool in Brain server (7th tool)
+- E2E tests with real Codex + Gemini CLI providers
+
+### Fixed
+- README.md version drift: v0.2.1 → v0.5.0
+- MCP serverInfo.version drift: "0.3.0" → dynamic from `__version__`
+
 ## [0.5.0] — 2026-02-26
 
 ### Added

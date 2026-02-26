@@ -125,6 +125,17 @@
 - [FIXED] EvidenceEntry.kind accepted arbitrary strings
 - [FIXED] No timeout on HiveMind LLM phases (Gemini hangs on 3rd call)
 
+### v0.6.0 — Refinement Harness (2026-02-26)
+- [x] Harness types: Candidate, Feedback, HarnessConfig, HarnessResult, POETIQ_PRESET
+- [x] Verifier ABC + TextVerifier + CommandVerifier
+- [x] CandidateGenerator ABC + StubCandidateGenerator + MultiProviderGenerator
+- [x] DefaultPolicy + ConsensusSelector (score + consensus bonus)
+- [x] HarnessMemoryStore (pattern capitalization in TieredMemory)
+- [x] RefinementHarness engine (generate-verify-refine loop)
+- [x] orchestrate_refined MCP tool + harness exports
+- [x] E2E tests with real Codex + Gemini CLI
+- [x] Drift fixes: README v0.2.1→v0.5.0, MCP version 0.3.0→dynamic
+
 ### v0.5.0 — Production-Ready (2026-02-26)
 - [x] Track A: guard_download.py CLI for PromptGuard-86M model download
 - [x] Track A: entity_extraction.py — EntityExtractor ABC + RegexEntityExtractor for Temporal KG
@@ -158,5 +169,5 @@
 
 ## Summary
 
-All milestones M0–M8 + Post-MVP + v0.5.0 complete. **v0.5.0 released 2026-02-26.**
-Total: **373 Rust tests + 410 Python tests = 783 tests**, all green.
+All milestones M0–M8 + Post-MVP + v0.6.0 complete. **v0.6.0 released 2026-02-26.**
+Total: **373 Rust tests + 442 Python tests = 815 tests**, all green.

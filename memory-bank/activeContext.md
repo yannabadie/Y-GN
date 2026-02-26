@@ -2,14 +2,14 @@
 
 ## Current Focus
 
-- [2026-02-26] v0.5.0 release: Production-Ready
-- Guard model download CLI, entity extraction, Temporal KG multi-hop, dashboard live wiring, E2E golden path
+- [2026-02-26] v0.6.0 release: Refinement Harness (Poetiq-inspired)
+- Generic generate-verify-refine loop, multi-provider consensus, pattern capitalization, orchestrate_refined MCP tool
 
 ## Test Counts (2026-02-26)
 
 - Rust: 373 tests
-- Python: 410 tests
-- Total: 783
+- Python: 442 tests
+- Total: 815
 
 ## Known Gaps (Documented)
 

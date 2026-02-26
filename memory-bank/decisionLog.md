@@ -36,3 +36,7 @@
 | 2026-02-26 | v0.5.0: SqliteTaskStore replaces in-memory A2A task store | In-memory task store lost tasks between requests. SQLite with WAL mode provides persistence. Same pattern as SqliteRegistry. |
 | 2026-02-26 | v0.5.0: Dashboard wired to live API, not mock data | All 5 dashboard pages now fetch from ygn-core gateway. Auto-refresh every 10s. Connection indicator in sidebar. |
 | 2026-02-26 | v0.5.0: 14 TDD tasks across 2 parallel tracks | Track A (Python/Brain hardening) + Track B (Rust/Dashboard wiring). TDD mandatory throughout. E2E golden path as integration gate. |
+| 2026-02-26 | v0.6.0: Generic Refinement Harness (Option 1 from analyse.md) | Most extensible approach. Poetiq is a preset, not the architecture. Supports future GEPA/DSPy policies. |
+| 2026-02-26 | ConsensusSelector with +0.15 bonus for multi-provider agreement | Inspired by Poetiq's finding that ensemble multi-model improves results. Simple heuristic, not embedding-based. |
+| 2026-02-26 | HarnessMemoryStore uses COLD tier for pattern capitalization | Poetiq's "learns how tasks are solved" — winning patterns stored for semantic recall in future runs. |
+| 2026-02-26 | Fix README v0.2.1 + MCP 0.3.0 drifts in same release | analyse.md flagged these drifts — cleaning them up alongside the feature release. |

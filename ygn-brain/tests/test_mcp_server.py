@@ -28,7 +28,8 @@ async def test_brain_mcp_initialize(server: McpBrainServer):
     assert resp["id"] == 1
     result = resp["result"]
     assert result["serverInfo"]["name"] == "ygn-brain"
-    assert result["serverInfo"]["version"] == "0.5.0"
+    from ygn_brain import __version__
+    assert result["serverInfo"]["version"] == __version__
     assert "tools" in result["capabilities"]
 
 

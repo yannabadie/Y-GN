@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Current version: v0.5.0**
+**Current version: v0.6.0**
 
 Y-GN (Yggdrasil-Grid Nexus) is a distributed multi-agent runtime that separates **reasoning** from **execution**:
 
@@ -79,8 +79,8 @@ ygn-brain-guard-download       # Download PromptGuard-86M model
 
 ### Test counts
 - Rust (ygn-core): 373 tests
-- Python (ygn-brain): 410 tests
-- Total: 783 tests
+- Python (ygn-brain): 442 tests
+- Total: 815 tests
 
 ## Architecture
 
@@ -139,6 +139,7 @@ Key Python modules:
 - `guard_stats.py` — GuardStats tracking for guard check statistics
 - `entity_extraction.py` — EntityExtractor ABC, RegexEntityExtractor for Temporal KG
 - `guard_download.py` — Model download CLI for PromptGuard-86M
+- `harness/` — Refinement Harness package: RefinementHarness engine, CandidateGenerator, Verifier (Text+Command), RefinementPolicy, ConsensusSelector, HarnessMemoryStore, POETIQ_PRESET
 
 ### ygn-core internals
 Trait-based subsystems: `providers`, `channels`, `tools`, `memory`, `security`, `runtime`. Key components:
@@ -194,7 +195,7 @@ Always read these files at session start. Update them when significant changes o
 
 M0 (Bootstrap) → M1 (Core usable) → M2 (Brain usable) → M3 (Brain↔Core integration) → M4 (Secure sandbox) → M5 (Memory v1) → M6 (IoA distributed) → M7 (Self-healing) → M8 (Release) → Post-MVP (Multi-Provider LLM)
 
-All milestones complete (current release: v0.5.0). The ROADMAP.md YAML block is the authoritative source for epic/task details and acceptance criteria.
+All milestones complete (current release: v0.6.0). The ROADMAP.md YAML block is the authoritative source for epic/task details and acceptance criteria.
 
 ## Key Constraints
 
