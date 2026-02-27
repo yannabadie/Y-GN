@@ -33,6 +33,7 @@ ml = [
 ygn-brain-repl = "ygn_brain.repl:main"
 ygn-brain-mcp = "ygn_brain.mcp_server:main"
 ygn-brain-guard-download = "ygn_brain.guard_download:main"
+ygn-brain-demo-compiler = "ygn_brain.demo_compiler:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/ygn_brain"]
