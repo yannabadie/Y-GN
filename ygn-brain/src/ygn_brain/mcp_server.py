@@ -107,6 +107,19 @@ _TOOLS = [
             "required": ["task"],
         },
     },
+    {
+        "name": "orchestrate_compiled",
+        "description": "Run HiveMind pipeline with context compilation and token budget",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "task": {"type": "string", "description": "Task to execute"},
+                "budget": {"type": "integer", "description": "Token budget for context"},
+                "system_prompt": {"type": "string", "description": "System prompt (optional)"},
+            },
+            "required": ["task", "budget"],
+        },
+    },
 ]
 
 _JSONRPC_PARSE_ERROR = -32700
@@ -203,6 +216,8 @@ class McpBrainServer:
                 return _result_response(req_id, self._call_memory_search_semantic(arguments))
             if tool_name == "orchestrate_refined":
                 return _result_response(req_id, await self._call_orchestrate_refined(arguments))
+            if tool_name == "orchestrate_compiled":
+                return _result_response(req_id, self._call_orchestrate_compiled(arguments))
             return _error_response(req_id, _JSONRPC_METHOD_NOT_FOUND, f"Unknown tool: {tool_name}")
         except Exception as exc:  # noqa: BLE001
             return _error_response(req_id, _JSONRPC_INTERNAL_ERROR, str(exc))
@@ -337,6 +352,20 @@ class McpBrainServer:
             "score": result.feedback.score,
             "rounds": result.rounds_used,
             "candidates": result.total_candidates,
+        }
+
+    def _call_orchestrate_compiled(self, args: dict[str, Any]) -> dict[str, Any]:
+        task = args["task"]
+        budget = args["budget"]
+        system_prompt = args.get("system_prompt", "You are a helpful AI assistant.")
+        result = self._orchestrator.run_compiled(task, budget=budget, system_prompt=system_prompt)
+        session_id = result["session_id"]
+        self._evidence_store[session_id] = self._orchestrator.evidence
+        return {
+            "content": [{"type": "text", "text": result.get("result", "")}],
+            "session_id": session_id,
+            "budget_used": result.get("budget_used", 0),
+            "within_budget": result.get("within_budget", True),
         }
 
     async def run_stdio(self) -> None:

@@ -36,10 +36,10 @@ async def test_brain_mcp_initialize(server: McpBrainServer):
 
 @pytest.mark.asyncio
 async def test_brain_mcp_tools_list(server: McpBrainServer):
-    """Lists all 7 tools with correct schemas."""
+    """Lists all 8 tools with correct schemas."""
     resp = json.loads(await server.handle_message(_req("tools/list")))
     tools = resp["result"]["tools"]
-    assert len(tools) == 7
+    assert len(tools) == 8
     names = {t["name"] for t in tools}
     expected = {
         "orchestrate",
@@ -49,6 +49,7 @@ async def test_brain_mcp_tools_list(server: McpBrainServer):
         "memory_recall",
         "memory_search_semantic",
         "orchestrate_refined",
+        "orchestrate_compiled",
     }
     assert names == expected
     # Each tool has inputSchema

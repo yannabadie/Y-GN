@@ -164,3 +164,87 @@ class Orchestrator:
             "result": final,
             "session_id": self.evidence.session_id,
         }
+
+    def run_compiled(
+        self,
+        user_input: str,
+        budget: int,
+        system_prompt: str = "You are a helpful AI assistant.",
+        artifact_store: object | None = None,
+    ) -> dict[str, Any]:
+        """Execute a pipeline pass using the context compiler.
+
+        Creates a Session, compiles a WorkingContext within the token budget,
+        then runs the HiveMind pipeline.
+        """
+        from .context_compiler.processors import (
+            ArtifactAttacher,
+            Compactor,
+            ContextCompiler,
+            HistorySelector,
+            MemoryPreloader,
+        )
+        from .context_compiler.session import Session
+
+        # 1. Create session
+        session = Session(session_id=self.evidence.session_id)
+        session.record("user_input", {"text": user_input}, token_estimate=len(user_input.split()) * 2)
+
+        # 2. Guard check
+        guard_result = self._guard_pipeline.evaluate(user_input)
+        session.record(
+            "guard_decision",
+            {"allowed": guard_result.allowed, "threat_level": guard_result.threat_level},
+            token_estimate=5,
+        )
+        if not guard_result.allowed:
+            self.evidence = session.to_evidence_pack()
+            return {
+                "result": f"Blocked: {guard_result.reason}",
+                "session_id": session.session_id,
+                "blocked": True,
+            }
+
+        # 3. Build processor pipeline
+        processors: list = [HistorySelector(), Compactor()]
+        if self._memory_service:
+            processors.append(MemoryPreloader(memory_service=self._memory_service))
+        if artifact_store is not None:
+            from .context_compiler.artifact_store import ArtifactStore as ArtifactStoreABC
+
+            if isinstance(artifact_store, ArtifactStoreABC):
+                processors.append(ArtifactAttacher(artifact_store=artifact_store))
+
+        compiler = ContextCompiler(processors=processors)
+        working_ctx = compiler.compile(session, budget=budget, system_prompt=system_prompt)
+
+        # 4. Run HiveMind pipeline
+        results = self._hivemind.run(user_input, session.evidence)
+
+        # 5. Update state
+        self.state = FSMState()
+        for phase in [
+            Phase.DIAGNOSIS,
+            Phase.ANALYSIS,
+            Phase.PLANNING,
+            Phase.EXECUTION,
+            Phase.VALIDATION,
+            Phase.SYNTHESIS,
+            Phase.COMPLETE,
+        ]:
+            self.state = self.state.transition(phase)
+
+        synthesis_results = [r for r in results if r.phase == "synthesis"]
+        final = (
+            synthesis_results[0].data.get("final", "")
+            if synthesis_results
+            else f"Processed: {user_input}"
+        )
+
+        self.evidence = session.to_evidence_pack()
+        return {
+            "result": final,
+            "session_id": session.session_id,
+            "budget_used": working_ctx.token_count,
+            "within_budget": working_ctx.is_within_budget(),
+        }
