@@ -62,6 +62,7 @@ ygn-core diagnose              # Run diagnostics on stdin
 ygn-brain-mcp                  # Start Brain MCP server over stdio
 ygn-brain-repl                 # Interactive REPL
 ygn-brain-guard-download       # Download PromptGuard-86M model
+ygn-brain-demo-compiler        # Demo: context compiler with artifact externalization
 ```
 
 ### Gateway HTTP routes
@@ -79,8 +80,8 @@ ygn-brain-guard-download       # Download PromptGuard-86M model
 
 ### Test counts
 - Rust (ygn-core): 380 tests
-- Python (ygn-brain): 445 tests
-- Total: 825 tests
+- Python (ygn-brain): 475 tests
+- Total: 855 tests
 
 ## Architecture
 
@@ -103,6 +104,13 @@ The former monolithic `OrchestratorV7` is decomposed into:
 - **EvidencePackGenerator** — produces auditable JSONL trace with SHA-256 hash chain, ed25519 signing, RFC 6962 Merkle tree (EU AI Act Art. 12)
 
 Swarm modes: Parallel, Sequential, RedBlue (adversarial testing), PingPong, LeadSupport, Specialist.
+
+Context compilation (AgentOS-inspired):
+- **ContextCompiler** — Session(EventLog) as ground truth → processors pipeline → WorkingContext (budget-aware compiled view)
+  - Processors: HistorySelector, Compactor, MemoryPreloader, ArtifactAttacher
+  - ArtifactStore: SqliteArtifactStore + FsArtifactStore (content-addressed, SHA-256)
+- **ToolInterrupts** — ToolInterruptHandler wraps MCP tool calls with typed events (success/error/timeout), PerceptionAligner (schema validation + secret redaction + summaries), SchemaRegistry
+- **Orchestrator.run_compiled()** — context-compiled orchestration with token budget
 
 LLM integration:
 - **LLMProvider** — abstract base class for provider adapters (StubLLMProvider for testing)
@@ -132,7 +140,7 @@ Key Python modules:
 - `guard.py` — GuardBackend ABC, RegexGuard, ToolInvocationGuard, scoring
 - `guard_backends.py` — ClassifierGuard ABC, StubClassifierGuard
 - `swarm.py` — RedBlueExecutor (template + LLM adversarial testing)
-- `mcp_server.py` — Brain MCP server (5 tools: orchestrate, guard_check, evidence_export, swarm_execute, memory_recall)
+- `mcp_server.py` — Brain MCP server (8 tools: orchestrate, guard_check, evidence_export, swarm_execute, memory_recall, memory_search_semantic, orchestrate_refined, orchestrate_compiled)
 - `embeddings.py` — EmbeddingService ABC, StubEmbeddingService, LocalEmbeddingService, OllamaEmbeddingService
 - `cosine.py` — cosine_similarity for embedding vectors
 - `guard_ml.py` — OnnxClassifierGuard, OllamaClassifierGuard (ML-based prompt injection detection)
@@ -141,6 +149,15 @@ Key Python modules:
 - `entity_extraction.py` — EntityExtractor ABC, RegexEntityExtractor for Temporal KG
 - `guard_download.py` — Model download CLI for PromptGuard-86M
 - `harness/` — Refinement Harness package: RefinementHarness engine, CandidateGenerator, Verifier (Text+Command), RefinementPolicy, ConsensusSelector, HarnessMemoryStore, POETIQ_PRESET
+- `context_compiler/session.py` — Session(EventLog) wrapping EvidencePack
+- `context_compiler/working_context.py` — WorkingContext compiled view for LLM calls
+- `context_compiler/processors.py` — ContextCompiler pipeline (HistorySelector, Compactor, MemoryPreloader, ArtifactAttacher)
+- `context_compiler/artifact_store.py` — ArtifactStore ABC + SqliteArtifactStore + FsArtifactStore
+- `context_compiler/token_budget.py` — TokenBudget tracker + estimate_tokens()
+- `tool_interrupt/events.py` — ToolEvent, ToolEventKind typed events
+- `tool_interrupt/handler.py` — ToolInterruptHandler (timeout + normalization + externalization)
+- `tool_interrupt/normalizer.py` — PerceptionAligner (schema validation + secret redaction + summaries)
+- `tool_interrupt/schemas.py` — SchemaRegistry per-tool JSON Schema
 
 ### ygn-core internals
 Trait-based subsystems: `providers`, `channels`, `tools`, `memory`, `security`, `runtime`. Key components:
