@@ -137,7 +137,10 @@ class ArtifactAttacher:
 
         for tr in ctx.tool_results:
             result_text = tr.get("result", "")
-            result_bytes = result_text.encode("utf-8") if isinstance(result_text, str) else result_text
+            if isinstance(result_text, str):
+                result_bytes = result_text.encode("utf-8")
+            else:
+                result_bytes = result_text
             if len(result_bytes) >= self._threshold:
                 handle = self._store.store(
                     result_bytes,
@@ -153,7 +156,11 @@ class ArtifactAttacher:
                 saved_tokens += estimate_tokens(result_text)
                 session.record(
                     "artifact_stored",
-                    {"handle": handle.artifact_id, "source": handle.source, "size_bytes": handle.size_bytes},
+                    {
+                        "handle": handle.artifact_id,
+                        "source": handle.source,
+                        "size_bytes": handle.size_bytes,
+                    },
                     token_estimate=10,
                 )
             else:

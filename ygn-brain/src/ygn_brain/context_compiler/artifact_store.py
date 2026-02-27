@@ -9,7 +9,6 @@ import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
 
 
 @dataclass
@@ -102,7 +101,9 @@ class SqliteArtifactStore(ArtifactStore):
             )
 
         self._conn.execute(
-            "INSERT INTO artifacts (id, content, summary, size_bytes, mime_type, source, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO artifacts"
+            " (id, content, summary, size_bytes, mime_type, source, created_at)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?)",
             (aid, content, summary, len(content), mime_type, source, now),
         )
         self._conn.commit()
@@ -112,7 +113,9 @@ class SqliteArtifactStore(ArtifactStore):
         )
 
     def retrieve(self, artifact_id: str) -> bytes | None:
-        row = self._conn.execute("SELECT content FROM artifacts WHERE id = ?", (artifact_id,)).fetchone()
+        row = self._conn.execute(
+            "SELECT content FROM artifacts WHERE id = ?", (artifact_id,)
+        ).fetchone()
         return row[0] if row else None
 
     def exists(self, artifact_id: str) -> bool:
@@ -122,7 +125,8 @@ class SqliteArtifactStore(ArtifactStore):
     def list_handles(self, session_id: str | None = None) -> list[ArtifactHandle]:
         if session_id:
             rows = self._conn.execute(
-                "SELECT id, summary, size_bytes, mime_type, created_at, source FROM artifacts WHERE session_id = ?",
+                "SELECT id, summary, size_bytes, mime_type, created_at, source"
+                " FROM artifacts WHERE session_id = ?",
                 (session_id,),
             ).fetchall()
         else:
@@ -130,7 +134,10 @@ class SqliteArtifactStore(ArtifactStore):
                 "SELECT id, summary, size_bytes, mime_type, created_at, source FROM artifacts"
             ).fetchall()
         return [
-            ArtifactHandle(artifact_id=r[0], summary=r[1], size_bytes=r[2], mime_type=r[3], created_at=r[4], source=r[5])
+            ArtifactHandle(
+                artifact_id=r[0], summary=r[1], size_bytes=r[2],
+                mime_type=r[3], created_at=r[4], source=r[5],
+            )
             for r in rows
         ]
 

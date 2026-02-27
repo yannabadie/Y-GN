@@ -37,7 +37,11 @@ def main() -> None:
 
     # 2. Record user input
     user_input = "Analyze the system logs and summarize errors"
-    session.record("user_input", {"text": user_input, "role": "user", "content": user_input}, token_estimate=15)
+    session.record(
+        "user_input",
+        {"text": user_input, "role": "user", "content": user_input},
+        token_estimate=15,
+    )
 
     # 3. Simulate a large tool output (10KB)
     large_output = "ERROR 2026-02-27 10:15:32 [worker-7] Connection timeout to db-primary\n" * 200
@@ -64,7 +68,7 @@ def main() -> None:
         budget=500,
     )
 
-    print(f"\n--- BEFORE externalization ---")
+    print("\n--- BEFORE externalization ---")
     print(f"Token count: {ctx_before_with_tool.token_count}")
     print(f"Within budget (500): {ctx_before_with_tool.is_within_budget()}")
     print(f"Overflow: {ctx_before_with_tool.overflow()} tokens")
@@ -75,7 +79,7 @@ def main() -> None:
     attacher = ArtifactAttacher(artifact_store=store, threshold_bytes=1024)
     ctx_after = attacher.process(session, ctx_before_with_tool, budget=500)
 
-    print(f"\n--- AFTER externalization ---")
+    print("\n--- AFTER externalization ---")
     print(f"Token count: {ctx_after.token_count}")
     print(f"Within budget (500): {ctx_after.is_within_budget()}")
     print(f"Overflow: {ctx_after.overflow()} tokens")
