@@ -37,8 +37,16 @@ ygn-core diagnose              # Run diagnostics on stdin
 | Route | Method | Description |
 |-------|--------|-------------|
 | `/health` | GET | Service health check |
-| `/providers` | GET | List all configured LLM providers |
-| `/health/providers` | GET | Health status with circuit breaker state |
+| `/providers` | GET | List all configured LLM providers with capabilities |
+| `/health/providers` | GET | Health status of all providers (circuit breaker state) |
+| `/mcp` | POST | MCP over HTTP (JSON-RPC 2.0, Streamable HTTP transport) |
+| `/.well-known/agent.json` | GET | A2A Agent Card discovery |
+| `/a2a` | POST | A2A message handler (SendMessage, GetTask, ListTasks) |
+| `/guard/log` | GET | Paginated guard decision log |
+| `/sessions` | GET | Evidence Pack sessions list |
+| `/memory/stats` | GET | Memory tier distribution |
+| `/registry/nodes` | GET | List registered nodes |
+| `/registry/sync` | POST | Cross-node registry sync |
 
 ## Works Today (E2E verified)
 
@@ -65,7 +73,7 @@ ygn-core diagnose              # Run diagnostics on stdin
 
 ## Test Count
 
-336 tests (unit + integration).
+380 tests (unit + integration).
 
 ## License
 
