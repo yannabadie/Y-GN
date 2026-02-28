@@ -32,7 +32,7 @@ def test_large_payload_externalized():
         ])
         base_ctx = compiler.compile(session, budget=500, system_prompt="You are helpful.")
 
-        # Add a large tool result to the context (simulating what would come from ToolInterruptHandler)
+        # Add a large tool result (simulating ToolInterruptHandler output)
         large_output = " ".join(["error_log_line"] * 2000)  # ~2000 words, ~2600 tokens, ~30KB
         from ygn_brain.context_compiler.token_budget import estimate_tokens
         tool_tokens = estimate_tokens(large_output)

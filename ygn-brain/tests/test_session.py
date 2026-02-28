@@ -1,6 +1,6 @@
 """Tests for Session & EventLog."""
 
-from ygn_brain.context_compiler.session import EventLog, Session, SessionEvent
+from ygn_brain.context_compiler.session import EventLog, Session
 
 
 def test_event_log_append_and_filter():

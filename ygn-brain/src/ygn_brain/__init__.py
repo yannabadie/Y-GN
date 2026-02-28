@@ -6,6 +6,23 @@ __version__ = "0.7.0"
 
 from .codex_provider import CodexCliError, CodexCliProvider
 from .context import ContextBuilder, ExecutionContext
+from .context_compiler import (
+    ArtifactAttacher,
+    ArtifactHandle,
+    ArtifactStore,
+    Compactor,
+    ContextCompiler,
+    EventLog,
+    FsArtifactStore,
+    HistorySelector,
+    MemoryPreloader,
+    Session,
+    SessionEvent,
+    SqliteArtifactStore,
+    TokenBudget,
+    WorkingContext,
+    estimate_tokens,
+)
 from .context_compression import CompressedContext, CompressionStrategy, ContextCompressor
 from .conversation import ConversationMemory, ConversationTurn
 from .cosine import cosine_similarity
@@ -101,23 +118,6 @@ from .tiered_memory import (
     WarmEntry,
 )
 from .tool_bridge import McpToolBridge
-from .context_compiler import (
-    ArtifactAttacher,
-    ArtifactHandle,
-    ArtifactStore,
-    Compactor,
-    ContextCompiler,
-    EventLog,
-    FsArtifactStore,
-    HistorySelector,
-    MemoryPreloader,
-    Session,
-    SessionEvent,
-    SqliteArtifactStore,
-    TokenBudget,
-    WorkingContext,
-    estimate_tokens,
-)
 from .tool_interrupt import (
     PerceptionAligner,
     SchemaRegistry,

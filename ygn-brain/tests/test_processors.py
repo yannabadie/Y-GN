@@ -7,7 +7,6 @@ from ygn_brain.context_compiler.artifact_store import SqliteArtifactStore
 from ygn_brain.context_compiler.processors import (
     ArtifactAttacher,
     Compactor,
-    ContextCompiler,
     HistorySelector,
     MemoryPreloader,
 )

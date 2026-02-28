@@ -188,7 +188,8 @@ class Orchestrator:
 
         # 1. Create session
         session = Session(session_id=self.evidence.session_id)
-        session.record("user_input", {"text": user_input}, token_estimate=len(user_input.split()) * 2)
+        token_est = len(user_input.split()) * 2
+        session.record("user_input", {"text": user_input}, token_estimate=token_est)
 
         # 2. Guard check
         guard_result = self._guard_pipeline.evaluate(user_input)
